@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -53,14 +53,13 @@ enum eTokenType
 	ttMultilineComment,    // /* */
 
 	// Atoms
-	ttIdentifier,            // abc123
-	ttIntConstant,           // 1234
-	ttFloatConstant,         // 12.34e56f
-	ttDoubleConstant,        // 12.34e56
-	ttStringConstant,        // "123"
-	ttHeredocStringConstant, // """text"""
+	ttIdentifier,          // abc123
+	ttIntConstant,         // 1234
+	ttFloatConstant,       // 12.34e56f
+	ttDoubleConstant,	   // 12.34e56
+	ttStringConstant,      // "123"
 	ttNonTerminatedStringConstant, // "123
-	ttBitsConstant,          // 0xFFFF
+	ttBitsConstant,        // 0xFFFF
 
 	// Math operators
 	ttPlus,                // +
@@ -68,8 +67,6 @@ enum eTokenType
 	ttStar,                // *
 	ttSlash,               // /
 	ttPercent,             // %
-
-	ttHandle,              // #
 
 	ttAddAssign,           // +=
 	ttSubAssign,           // -=
@@ -88,6 +85,7 @@ enum eTokenType
 	ttDec,                 // --
 
 	ttDot,                 // .
+	ttArrow,               // ->
 
 	// Statement tokens
 	ttAssignment,          // =
@@ -153,11 +151,6 @@ enum eTokenType
 	ttSwitch,              // switch
 	ttCase,                // case
 	ttDefault,             // default
-	ttIn,                  // in
-	ttOut,                 // out
-	ttInOut,               // inout
-	ttNull,                // null
-    ttStruct               // struct
 };
 
 struct sTokenWord
@@ -210,12 +203,12 @@ sTokenWord const tokenWords[] =
 	{">="      , ttGreaterThanOrEqual},
 	{"++"      , ttInc},
 	{"--"      , ttDec},
+	{"->"      , ttArrow},
 	{"&"       , ttAmp},
 	{"!"       , ttNot},
 	{"||"      , ttOr},
 	{"&&"      , ttAnd},
 	{"^^"      , ttXor},
-	{"@"       , ttHandle},
 	{"and"     , ttAnd},
 	{"bits"    , ttBits},
 	{"bits8"   , ttBits8},
@@ -234,19 +227,15 @@ sTokenWord const tokenWords[] =
 	{"else"    , ttElse},
 	{"false"   , ttFalse},
 	{"float"   , ttFloat},
-	{"for"     , ttFor},
 	{"if"      , ttIf},
-	{"in"      , ttIn},
-	{"inout"   , ttInOut},
+	{"for"	   , ttFor},
 	{"import"  , ttImport},
 	{"int"     , ttInt},
 	{"int8"    , ttInt8},
 	{"int16"   , ttInt16},
 	{"int32"   , ttInt},  
 	{"not"     , ttNot},
-	{"null"    , ttNull},
 	{"or"      , ttOr},
-	{"out"     , ttOut},
 	{"return"  , ttReturn},
 	{"true"    , ttTrue},
 	{"void"    , ttVoid},
@@ -256,7 +245,6 @@ sTokenWord const tokenWords[] =
 	{"uint16"  , ttUInt16},
 	{"uint32"  , ttUInt},
 	{"switch"  , ttSwitch},
-	{"struct"  , ttStruct},
 	{"case"    , ttCase}, 
 	{"default" , ttDefault},
 	{"xor"     , ttXor},

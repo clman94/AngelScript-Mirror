@@ -1,24 +1,24 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
-   This software is provided 'as-is', without any express or implied
-   warranty. In no event will the authors be held liable for any
+   This software is provided 'as-is', without any express or implied 
+   warranty. In no event will the authors be held liable for any 
    damages arising from the use of this software.
 
-   Permission is granted to anyone to use this software for any
-   purpose, including commercial applications, and to alter it and
+   Permission is granted to anyone to use this software for any 
+   purpose, including commercial applications, and to alter it and 
    redistribute it freely, subject to the following restrictions:
 
-   1. The origin of this software must not be misrepresented; you
+   1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
-   2. Altered source versions must be plainly marked as such, and
+   2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
 
-   3. This notice may not be removed or altered from any source
+   3. This notice may not be removed or altered from any source 
       distribution.
 
    The original version of this library can be located at:
@@ -30,51 +30,42 @@
 
 
 //
-// as_callfunc_x86.cpp
+// as_callfunc.cpp
 //
 // These functions handle the actual calling of system functions
 //
 
 
-
 #include "as_config.h"
-
-#ifndef AS_MAX_PORTABILITY
-#ifdef AS_X86
-
 #include "as_callfunc.h"
 #include "as_scriptengine.h"
 #include "as_texts.h"
 #include "as_tokendef.h"
 
-BEGIN_AS_NAMESPACE
 
-int DetectCallingConvention(bool isMethod, const asUPtr &ptr, int callConv, asSSystemFunctionInterface *internal)
+int DetectCallingConvention(const char *obj, asUPtr &ptr, int callConv, asSSystemFunctionInterface *internal)
 {
 	memset(internal, 0, sizeof(asSSystemFunctionInterface));
 
-	internal->func = (asDWORD)ptr.f.func;
+	internal->func = (asDWORD)ptr.func;
 
-	asDWORD base = callConv;
-	if( !isMethod )
+	int base = callConv;
+	if( obj == 0 )
 	{
 		if( base == asCALL_CDECL )
 			internal->callConv = ICC_CDECL;
 		else if( base == asCALL_STDCALL )
 			internal->callConv = ICC_STDCALL;
-		else if( base == asCALL_GENERIC )
-			internal->callConv = ICC_GENERIC_FUNC;
 		else
 			return asNOT_SUPPORTED;
 	}
 	else
 	{
-#ifndef AS_NO_CLASS_METHODS
 		if( base == asCALL_THISCALL )
 		{
 			internal->callConv = ICC_THISCALL;
 #ifdef GNU_STYLE_VIRTUAL_METHOD
-			if( (asDWORD(ptr.f.func) & 1) )
+			if( (asDWORD(ptr.func) & 1) )
 				internal->callConv = ICC_VIRTUAL_THISCALL;
 #endif
 			internal->baseOffset = MULTI_BASE_OFFSET(ptr);
@@ -85,14 +76,10 @@ int DetectCallingConvention(bool isMethod, const asUPtr &ptr, int callConv, asSS
 				return asNOT_SUPPORTED;
 #endif
 		}
-		else
-#endif
-		if( base == asCALL_CDECL_OBJLAST )
+		else if( base == asCALL_CDECL_OBJLAST )
 			internal->callConv = ICC_CDECL_OBJLAST;
-		else if( base == asCALL_CDECL_OBJFIRST )
-			internal->callConv = ICC_CDECL_OBJFIRST;
-		else if( base == asCALL_GENERIC )
-			internal->callConv = ICC_GENERIC_METHOD;
+        else if( base == asCALL_CDECL_OBJFIRST )
+            internal->callConv = ICC_CDECL_OBJFIRST;
 		else
 			return asNOT_SUPPORTED;
 	}
@@ -101,19 +88,33 @@ int DetectCallingConvention(bool isMethod, const asUPtr &ptr, int callConv, asSS
 }
 
 // This function should prepare system functions so that it will be faster to call them
-int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *internal, asCScriptEngine *)
+int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *internal, asCScriptEngine *engine)
 {
-	// References are always returned as primitive data
-	if( func->returnType.IsReference() || func->returnType.IsObjectHandle() )
+	// References and pointers are always returned the same way
+	if( func->returnType.isReference || func->returnType.pointerLevel > 0 )
 	{
 		internal->hostReturnInMemory = false;
 		internal->hostReturnSize = 1;
 		internal->hostReturnFloat = false;
 	}
 	// Registered types have special flags that determine how they are returned
-	else if( func->returnType.IsObject() )
+	else if( func->returnType.objectType != 0 )
 	{
-		asDWORD objType = func->returnType.GetObjectType()->flags;
+		asDWORD objType = func->returnType.objectType->flags;
+		if( objType == 0 )
+		{
+			objType = asOBJ_CLASS;
+
+			// We should determine type from registered behaviours
+			asSTypeBehaviour *beh = engine->GetBehaviour(&func->returnType);
+			if( beh )
+			{
+				if( beh->construct ) objType |= asOBJ_CLASS_CONSTRUCTOR;
+				if( beh->destruct  ) objType |= asOBJ_CLASS_DESTRUCTOR;
+				if( beh->copy      ) objType |= asOBJ_CLASS_ASSIGNMENT;
+			}
+		}
+
 		if( objType & asOBJ_CLASS )
 		{
 			if( objType & COMPLEX_MASK )
@@ -125,7 +126,7 @@ int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *i
 			else
 			{
 				internal->hostReturnFloat = false;
-				if( func->returnType.GetSizeInMemoryDWords() > 2 )
+				if( func->returnType.GetSizeOnStackDWords() > 2 )
 				{
 					internal->hostReturnInMemory = true;
 					internal->hostReturnSize = 1;
@@ -133,11 +134,11 @@ int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *i
 				else
 				{
 					internal->hostReturnInMemory = false;
-					internal->hostReturnSize = func->returnType.GetSizeInMemoryDWords();
+					internal->hostReturnSize = func->returnType.GetSizeOnStackDWords();
 				}
 
 #ifdef THISCALL_RETURN_SIMPLE_IN_MEMORY
-				if( internal->callConv == ICC_THISCALL ||
+				if( internal->callConv == ICC_THISCALL || 
 					internal->callConv == ICC_VIRTUAL_THISCALL )
 				{
 					internal->hostReturnInMemory = true;
@@ -145,7 +146,7 @@ int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *i
 				}
 #endif
 #ifdef CDECL_RETURN_SIMPLE_IN_MEMORY
-				if( internal->callConv == ICC_CDECL ||
+				if( internal->callConv == ICC_CDECL || 
 					internal->callConv == ICC_CDECL_OBJLAST ||
 					internal->callConv == ICC_CDECL_OBJFIRST )
 				{
@@ -165,37 +166,34 @@ int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *i
 		else if( objType == asOBJ_PRIMITIVE )
 		{
 			internal->hostReturnInMemory = false;
-			internal->hostReturnSize = func->returnType.GetSizeInMemoryDWords();
+			internal->hostReturnSize = func->returnType.GetSizeOnStackDWords();
 			internal->hostReturnFloat = false;
 		}
 		else if( objType == asOBJ_FLOAT )
 		{
 			internal->hostReturnInMemory = false;
-			internal->hostReturnSize = func->returnType.GetSizeInMemoryDWords();
+			internal->hostReturnSize = func->returnType.GetSizeOnStackDWords();
 			internal->hostReturnFloat = true;
 		}
 	}
 	// Primitive types can easily be determined
-	else if( func->returnType.GetSizeInMemoryDWords() > 2 )
+	else if( func->returnType.GetSizeOnStackDWords() > 2 )
 	{
-		// Shouldn't be possible to get here
-		assert(false);
-
 		internal->hostReturnInMemory = true;
-		internal->hostReturnSize = 1;
+		internal->hostReturnSize = 1; 
 		internal->hostReturnFloat = false;
 	}
-	else if( func->returnType.GetSizeInMemoryDWords() == 2 )
+	else if( func->returnType.GetSizeOnStackDWords() == 2 )
 	{
 		internal->hostReturnInMemory = false;
 		internal->hostReturnSize = 2;
-		internal->hostReturnFloat = func->returnType.IsEqualExceptConst(asCDataType::CreatePrimitive(ttDouble, true));
+		internal->hostReturnFloat = func->returnType.IsEqualExceptConst(asCDataType(ttDouble, true, false));
 	}
-	else if( func->returnType.GetSizeInMemoryDWords() == 1 )
+	else if( func->returnType.GetSizeOnStackDWords() == 1 )
 	{
 		internal->hostReturnInMemory = false;
 		internal->hostReturnSize = 1;
-		internal->hostReturnFloat = func->returnType.IsEqualExceptConst(asCDataType::CreatePrimitive(ttFloat, true));
+		internal->hostReturnFloat = func->returnType.IsEqualExceptConst(asCDataType(ttFloat, true, false));
 	}
 	else
 	{
@@ -207,58 +205,29 @@ int PrepareSystemFunction(asCScriptFunction *func, asSSystemFunctionInterface *i
 	// Calculate the size needed for the parameters
 	internal->paramSize = func->GetSpaceNeededForArguments();
 
-	// Verify if the function takes any objects by value
-	asUINT n;
-	internal->takesObjByVal = false;
-	for( n = 0; n < func->parameterTypes.GetLength(); n++ )
-	{
-		if( func->parameterTypes[n].IsObject() && !func->parameterTypes[n].IsObjectHandle() && !func->parameterTypes[n].IsReference() )
-		{
-			internal->takesObjByVal = true;
-			break;
-		}
-	}
-
-	// Verify if the function has any registered autohandles
-	internal->hasAutoHandles = false;
-	for( n = 0; n < internal->paramAutoHandles.GetLength(); n++ )
-	{
-		if( internal->paramAutoHandles[n] )
-		{
-			internal->hasAutoHandles = true;
-			break;
-		}
-	}
-
 	return 0;
 }
 
-typedef asQWORD (*t_CallCDeclQW)(const asDWORD *, int, asDWORD);
-typedef asQWORD (*t_CallCDeclQWObj)(void *obj, const asDWORD *, int, asDWORD);
-typedef asDWORD (*t_CallCDeclRetByRef)(const asDWORD *, int, asDWORD, void *);
-typedef asDWORD (*t_CallCDeclObjRetByRef)(void *obj, const asDWORD *, int, asDWORD, void *);
-typedef asQWORD (*t_CallSTDCallQW)(const asDWORD *, int, asDWORD);
-typedef asQWORD (*t_CallThisCallQW)(const void *, const asDWORD *, int, asDWORD);
+typedef asQWORD (*t_CallCDeclQW)(const asDWORD *, int, asDWORD); 
+typedef asDWORD (*t_CallCDeclRetByRef)(const asDWORD *, int, asDWORD, void *); 
+typedef asQWORD (*t_CallSTDCallQW)(const asDWORD *, int, asDWORD); 
+typedef asQWORD (*t_CallThisCallQW)(const void *, const asDWORD *, int, asDWORD); 
 typedef asDWORD (*t_CallThisCallRetByRef)(const void *, const asDWORD *, int, asDWORD, void *);
 
 // Prototypes
 void CallCDeclFunction(const asDWORD *args, int paramSize, asDWORD func);
-void CallCDeclFunctionObjLast(const void *obj, const asDWORD *args, int paramSize, asDWORD func);
-void CallCDeclFunctionObjFirst(const void *obj, const asDWORD *args, int paramSize, asDWORD func);
+void CallCDeclFunctionObjFirst(const asDWORD *args, int paramSize, asDWORD func);
 void CallCDeclFunctionRetByRef_impl(const asDWORD *args, int paramSize, asDWORD func, void *retPtr);
-void CallCDeclFunctionRetByRefObjLast_impl(const void *obj, const asDWORD *args, int paramSize, asDWORD func, void *retPtr);
-void CallCDeclFunctionRetByRefObjFirst_impl(const void *obj, const asDWORD *args, int paramSize, asDWORD func, void *retPtr);
+void CallCDeclFunctionRetByRefObjFirst_impl(const asDWORD *args, int paramSize, asDWORD func, void *retPtr);
 void CallSTDCallFunction(const asDWORD *args, int paramSize, asDWORD func);
 void CallThisCallFunction(const void *obj, const asDWORD *args, int paramSize, asDWORD func);
-void CallThisCallFunctionRetByRef_impl(const void *, const asDWORD *, int, asDWORD, void *retPtr);
+void CallThisCallFunctionRetByRef_impl(const void *, const asDWORD *, int, asDWORD, void *retPtr); 
 
 // Initialize function pointers
 const t_CallCDeclQW CallCDeclFunctionQWord = (t_CallCDeclQW)CallCDeclFunction;
-const t_CallCDeclQWObj CallCDeclFunctionQWordObjLast = (t_CallCDeclQWObj)CallCDeclFunctionObjLast;
-const t_CallCDeclQWObj CallCDeclFunctionQWordObjFirst = (t_CallCDeclQWObj)CallCDeclFunctionObjFirst;
+const t_CallCDeclQW CallCDeclFunctionQWordObjFirst = (t_CallCDeclQW)CallCDeclFunctionObjFirst;
 const t_CallCDeclRetByRef CallCDeclFunctionRetByRef = (t_CallCDeclRetByRef)CallCDeclFunctionRetByRef_impl;
-const t_CallCDeclObjRetByRef CallCDeclFunctionRetByRefObjLast = (t_CallCDeclObjRetByRef)CallCDeclFunctionRetByRefObjLast_impl;
-const t_CallCDeclObjRetByRef CallCDeclFunctionRetByRefObjFirst = (t_CallCDeclObjRetByRef)CallCDeclFunctionRetByRefObjFirst_impl;
+const t_CallCDeclRetByRef CallCDeclFunctionRetByRefObjFirst = (t_CallCDeclRetByRef)CallCDeclFunctionRetByRefObjFirst_impl;
 const t_CallSTDCallQW CallSTDCallFunctionQWord = (t_CallSTDCallQW)CallSTDCallFunction;
 const t_CallThisCallQW CallThisCallFunctionQWord = (t_CallThisCallQW)CallThisCallFunction;
 const t_CallThisCallRetByRef CallThisCallFunctionRetByRef = (t_CallThisCallRetByRef)CallThisCallFunctionRetByRef_impl;
@@ -266,115 +235,72 @@ const t_CallThisCallRetByRef CallThisCallFunctionRetByRef = (t_CallThisCallRetBy
 asDWORD GetReturnedFloat();
 asQWORD GetReturnedDouble();
 
-int CallSystemFunction(int id, asCContext *context, void *objectPointer)
+int CallSystemFunction(int id, asCContext *context)
 {
 	id = -id - 1;
 
-	asCScriptEngine *engine = context->engine;
-	asSSystemFunctionInterface *sysFunc = engine->systemFunctionInterfaces[id];
-	int callConv = sysFunc->callConv;
-	if( callConv == ICC_GENERIC_FUNC || callConv == ICC_GENERIC_METHOD )
-		return context->CallGeneric(-id-1, objectPointer);
-
+	asQWORD retTemp = 0;
+	asDWORD retDW = 0;
 	asQWORD retQW = 0;
 
-	asCScriptFunction *descr = engine->systemFunctions[id];
+	asCScriptEngine *engine = context->engine;
 
-	void    *func              = (void*)sysFunc->func;
-	int      paramSize         = sysFunc->paramSize;
+	asSSystemFunctionInterface *sysFunc = (engine->systemFunctionInterfaces)[id];
+
+	int     callConv           = sysFunc->callConv;
+	void   *func               = (void*)sysFunc->func;
+	int     paramSize          = sysFunc->paramSize;
+
 	asDWORD *args              = context->stackPointer;
 	void    *retPointer = 0;
 	void    *obj = 0;
 	asDWORD *vftable;
-	int      popSize           = paramSize;
+	int     popSize            = paramSize;
 
-	context->objectType = descr->returnType.GetObjectType();
-	if( descr->returnType.IsObject() && !descr->returnType.IsReference() && !descr->returnType.IsObjectHandle() )
+	if( sysFunc->scriptReturnInMemory )
 	{
-		// Allocate the memory for the object
-		retPointer = engine->CallAlloc(descr->returnType.GetObjectType());
+		popSize++;
+		if( !sysFunc->hostReturnInMemory )
+		{
+			// Skip the address sent by the script engine
+			args++;
+		}
+		else
+		{
+			// The return is made in memory
+			callConv++;
 
+			// Get the return pointer
+			retPointer = (void*)*args;
+
+			// Skip the pointer
+			args++;
+		}
+	}
+	else
+	{
 		if( sysFunc->hostReturnInMemory )
 		{
 			// The return is made in memory
 			callConv++;
+
+			retPointer = (void*)&retTemp;
 		}
 	}
-
+	
 	if( callConv >= ICC_THISCALL )
 	{
-		if( objectPointer )
-		{
-			obj = objectPointer;
+		popSize++;
+		// Check for null pointer
+		obj = (void*)*(args + paramSize);
+		if( obj == 0 )
+		{	
+			context->SetInternalException(TXT_NULL_POINTER_ACCESS);
+			return 0;
 		}
-		else
-		{
-			// The object pointer should be popped from the context stack
-			popSize++;
 
-			// Check for null pointer
-			obj = (void*)*(args);
-			if( obj == 0 )
-			{
-				context->SetInternalException(TXT_NULL_POINTER_ACCESS);
-				if( retPointer )
-					engine->CallFree(descr->returnType.GetObjectType(), retPointer);
-				return 0;
-			}
-
-			// Add the base offset for multiple inheritance
-			obj = (void*)(int(obj) + sysFunc->baseOffset);
-
-			// Don't keep a reference to the object pointer, as it is the
-			// responsibility of the application to make sure the reference
-			// is valid during the call
-			// if( descr->objectType->beh.addref )
-			//	engine->CallObjectMethod(obj, descr->objectType->beh.addref);
-
-			// Skip the object pointer
-			args++;
-		}
-	}
-
-	asDWORD paramBuffer[64];
-	if( sysFunc->takesObjByVal )
-	{
-		paramSize = 0;
-		int spos = 0;
-		int dpos = 1;
-		for( asUINT n = 0; n < descr->parameterTypes.GetLength(); n++ )
-		{
-			if( descr->parameterTypes[n].IsObject() && !descr->parameterTypes[n].IsObjectHandle() && !descr->parameterTypes[n].IsReference() )
-			{
-#ifdef COMPLEX_OBJS_PASSED_BY_REF
-				if( descr->parameterTypes[n].GetObjectType()->flags & COMPLEX_MASK )
-				{
-					paramBuffer[dpos++] = args[spos++];
-					paramSize++;
-				}
-				else
-#endif
-				{
-					// Copy the object's memory to the buffer
-					memcpy(&paramBuffer[dpos], *(void**)(args+spos), descr->parameterTypes[n].GetSizeInMemoryBytes());
-					// Delete the original memory
-					engine->CallFree(descr->parameterTypes[n].GetObjectType(), *(char**)(args+spos));
-					spos++;
-					dpos += descr->parameterTypes[n].GetSizeInMemoryDWords();
-					paramSize += descr->parameterTypes[n].GetSizeInMemoryDWords();
-				}
-			}
-			else
-			{
-				// Copy the value directly
-				paramBuffer[dpos++] = args[spos++];
-				if( descr->parameterTypes[n].GetSizeOnStackDWords() > 1 )
-					paramBuffer[dpos++] = args[spos++];
-				paramSize += descr->parameterTypes[n].GetSizeOnStackDWords();
-			}
-		}
-		// Keep a free location at the beginning
-		args = &paramBuffer[1];
+		// Add the base offset for multiple inheritance
+		obj = (void*)(int(obj) + sysFunc->baseOffset);
 	}
 
 	context->isCallingSystemFunction = true;
@@ -383,7 +309,7 @@ int CallSystemFunction(int id, asCContext *context, void *objectPointer)
 	case ICC_CDECL:
 		retQW = CallCDeclFunctionQWord(args, paramSize<<2, (asDWORD)func);
 		break;
-
+		
 	case ICC_CDECL_RETURNINMEM:
 		retQW = CallCDeclFunctionRetByRef(args, paramSize<<2, (asDWORD)func, retPointer);
 		break;
@@ -424,22 +350,27 @@ int CallSystemFunction(int id, asCContext *context, void *objectPointer)
 		break;
 
 	case ICC_CDECL_OBJLAST:
-		retQW = CallCDeclFunctionQWordObjLast(obj, args, paramSize<<2, (asDWORD)func);
+		// Call the system object method as a cdecl with the obj ref as the last parameter
+		paramSize++;
+
+		retQW = CallCDeclFunctionQWord(args, paramSize<<2, (asDWORD)func);
 		break;
 
 	case ICC_CDECL_OBJLAST_RETURNINMEM:
 		// Call the system object method as a cdecl with the obj ref as the last parameter
-		retQW = CallCDeclFunctionRetByRefObjLast(obj, args, paramSize<<2, (asDWORD)func, retPointer);
+		paramSize++;
+
+		retQW = CallCDeclFunctionRetByRef(args, paramSize<<2, (asDWORD)func, retPointer);
 		break;
 
-	case ICC_CDECL_OBJFIRST:
-		// Call the system object method as a cdecl with the obj ref as the first parameter
-		retQW = CallCDeclFunctionQWordObjFirst(obj, args, paramSize<<2, (asDWORD)func);
-		break;
+    case ICC_CDECL_OBJFIRST:
+        // Call the system object method as a cdecl with the obj ref as the first parameter
+        retQW = CallCDeclFunctionQWordObjFirst(args, paramSize<<2, (asDWORD)func);
+        break;
 
-	case ICC_CDECL_OBJFIRST_RETURNINMEM:
-		// Call the system object method as a cdecl with the obj ref as the first parameter
-		retQW = CallCDeclFunctionRetByRefObjFirst(obj, args, paramSize<<2, (asDWORD)func, retPointer);
+    case ICC_CDECL_OBJFIRST_RETURNINMEM:
+        // Call the system object method as a cdecl with the obj ref as the first parameter
+		retQW = CallCDeclFunctionRetByRefObjFirst(args, paramSize<<2, (asDWORD)func, retPointer);
 		break;
 
 	default:
@@ -447,96 +378,52 @@ int CallSystemFunction(int id, asCContext *context, void *objectPointer)
 	}
 	context->isCallingSystemFunction = false;
 
-#ifdef COMPLEX_OBJS_PASSED_BY_REF
-	if( sysFunc->takesObjByVal )
-	{
-		// Need to free the complex objects passed by value
-		args = context->stackPointer;
-		if( callConv >= ICC_THISCALL && !objectPointer )
-		    args++;
+	if( context->status == tsUnhandledException )
+		return 0;
 
-		int spos = 0;
-		for( int n = 0; n < descr->parameterTypes.GetLength(); n++ )
-		{
-			if( descr->parameterTypes[n].IsObject() &&
-				!descr->parameterTypes[n].IsReference() &&
-				(descr->parameterTypes[n].GetObjectType()->flags & COMPLEX_MASK) )
-			{
-				void *obj = (void*)args[spos++];
-				asSTypeBehaviour *beh = &descr->parameterTypes[n].GetObjectType()->beh;
-				if( beh->destruct )
-					engine->CallObjectMethod(obj, beh->destruct);
-
-				engine->CallFree(descr->parameterTypes[n].GetObjectType(), obj);
-			}
-			else
-				spos += descr->parameterTypes[n].GetSizeInMemoryDWords();
-		}
-	}
-#endif
+	// Restore the original location of the arguments
+	args = context->stackPointer;
 
 	// Store the returned value in our stack
-	if( descr->returnType.IsObject() && !descr->returnType.IsReference() )
+	if( sysFunc->scriptReturnInMemory )
 	{
-		if( descr->returnType.IsObjectHandle() )
+		if( !sysFunc->hostReturnInMemory )
 		{
-			context->objectRegister = (void*)(asDWORD)retQW;
-
-			if( sysFunc->returnAutoHandle && context->objectRegister )
-				engine->CallObjectMethod(context->objectRegister, descr->returnType.GetObjectType()->beh.addref);
+			// Copy the returned value to the pointer sent by the script engine
+			if( sysFunc->hostReturnSize == 1 )
+				*(asDWORD*)*args = (asDWORD)retQW;
+			else
+				*(asQWORD*)*args = retQW;
 		}
-		else
-		{
-			if( !sysFunc->hostReturnInMemory )
-			{
-				// Copy the returned value to the pointer sent by the script engine
-				if( sysFunc->hostReturnSize == 1 )
-					*(asDWORD*)retPointer = (asDWORD)retQW;
-				else
-					*(asQWORD*)retPointer = retQW;
-			}
 
-			// Store the object in the register
-			context->objectRegister = retPointer;
-		}
+		// Return the address to the location
+		*(asDWORD*)&context->returnVal = *args;
 	}
 	else
 	{
-		// Store value in returnVal register
-		if( sysFunc->hostReturnFloat )
+		if( sysFunc->hostReturnInMemory )
 		{
-			if( sysFunc->hostReturnSize == 1 )
-				*(asDWORD*)&context->register1 = GetReturnedFloat();
-			else
-				context->register1 = GetReturnedDouble();
+			// Copy the return value
+			retDW = (asDWORD)retTemp;
 		}
-		else if( sysFunc->hostReturnSize == 1 )
-			*(asDWORD*)&context->register1 = (asDWORD)retQW;
 		else
-			context->register1 = retQW;
-	}
-
-	if( sysFunc->hasAutoHandles )
-	{
-		args = context->stackPointer;
-		if( callConv >= ICC_THISCALL && !objectPointer )
-			args++;
-
-		int spos = 0;
-		for( asUINT n = 0; n < descr->parameterTypes.GetLength(); n++ )
 		{
-			if( sysFunc->paramAutoHandles[n] && args[spos] )
+			if( sysFunc->hostReturnFloat )
 			{
-				// Call the release method on the type
-				engine->CallObjectMethod((void*)args[spos], descr->parameterTypes[n].GetObjectType()->beh.release);
-				args[spos] = 0;
+				if( sysFunc->hostReturnSize == 1 )
+					retDW = GetReturnedFloat();
+				else
+					retQW = GetReturnedDouble();
 			}
-
-			if( descr->parameterTypes[n].IsObject() && !descr->parameterTypes[n].IsObjectHandle() && !descr->parameterTypes[n].IsReference() )
-				spos++;
-			else
-				spos += descr->parameterTypes[n].GetSizeOnStackDWords();
+			else if( sysFunc->hostReturnSize == 1 )
+				retDW = (asDWORD)retQW;
 		}
+
+		// Store value in returnVal register
+		if( sysFunc->hostReturnSize == 1 )
+			*(asDWORD*)&context->returnVal = retDW;
+		else if( sysFunc->hostReturnSize == 2 )
+			context->returnVal = retQW;
 	}
 
 	return popSize;
@@ -552,9 +439,9 @@ void CallCDeclFunction(const asDWORD *args, int paramSize, asDWORD func)
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -569,8 +456,8 @@ copyloop:
 endcopy:
 
 		// Call function
-		call [func]
-
+		call [func]   
+			
 		// Pop arguments from stack
 		add  esp, paramSize
 
@@ -595,13 +482,13 @@ endcopy:
 		"jne   copyloop       \n"
 		"endcopy:             \n"
 		"call  *16(%ebp)      \n"
-		"addl  12(%ebp), %esp \n" // pop arguments
+		"addl  12(%ebp), %esp \n" // pop arguments 
 		"popl  %ecx           \n");
 
 #endif
 }
 
-void CallCDeclFunctionObjLast(const void *obj, const asDWORD *args, int paramSize, asDWORD func)
+void CallCDeclFunctionObjFirst(const asDWORD *args, int paramSize, asDWORD func)
 {
 #if defined ASM_INTEL
 
@@ -610,73 +497,9 @@ void CallCDeclFunctionObjLast(const void *obj, const asDWORD *args, int paramSiz
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Push the object pointer as the last argument to the function
-		push obj
-
-		// Copy arguments from script
-		// stack to application stack
-        mov  ecx, paramSize
-		mov  eax, args
-		add  eax, ecx
-		cmp  ecx, 0
-		je   endcopy
-copyloop:
-		sub  eax, 4
-		push dword ptr [eax]
-		sub  ecx, 4
-		jne  copyloop
-endcopy:
-
-		// Call function
-		call [func]
-
-		// Pop arguments from stack
-		add  esp, paramSize
-		add  esp, 4
-
-		// Restore registers
-		pop  ecx
-
-		// return value in EAX or EAX:EDX
-	}
-
-#elif defined ASM_AT_N_T
-
-	asm("pushl %ecx           \n"
-		"pushl 8(%ebp)        \n"
-		"movl  16(%ebp), %ecx \n" // paramSize
-		"movl  12(%ebp), %eax \n" // args
-		"addl  %ecx, %eax     \n" // push arguments on the stack
-		"cmp   $0, %ecx       \n"
-		"je    endcopy8       \n"
-		"copyloop8:           \n"
-		"subl  $4, %eax       \n"
-		"pushl (%eax)         \n"
-		"subl  $4, %ecx       \n"
-		"jne   copyloop8      \n"
-		"endcopy8:            \n"
-		"call  *20(%ebp)      \n"
-		"addl  16(%ebp), %esp \n" // pop arguments
-		"addl  $4, %esp       \n"
-		"popl  %ecx           \n");
-
-#endif
-}
-
-void CallCDeclFunctionObjFirst(const void *obj, const asDWORD *args, int paramSize, asDWORD func)
-{
-#if defined ASM_INTEL
-
-	// Copy the data to the real stack. If we fail to do
-	// this we may run into trouble in case of exceptions.
-	__asm
-	{
-		// We must save registers that are used
-	    push ecx
-
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -691,11 +514,13 @@ copyloop:
 endcopy:
 
 		// push object as first parameter
-        push obj
+		mov  eax, args
+		add  eax, paramSize
+        push dword ptr [eax]        
 
 		// Call function
-		call [func]
-
+		call [func]   
+			
 		// Pop arguments from stack
 		add  esp, paramSize
         add  esp, 4
@@ -709,8 +534,8 @@ endcopy:
 #elif defined ASM_AT_N_T
 
 	asm("pushl %ecx           \n"
-		"movl  16(%ebp), %ecx \n" // paramSize
-		"movl  12(%ebp), %eax \n" // args
+		"movl  12(%ebp), %ecx \n" // paramSize
+		"movl  8(%ebp), %eax  \n" // args
 		"addl  %ecx, %eax     \n" // push arguments on the stack
 		"cmp   $0, %ecx       \n"
 		"je    endcopy6       \n"
@@ -720,16 +545,19 @@ endcopy:
 		"subl  $4, %ecx       \n"
 		"jne   copyloop6      \n"
 		"endcopy6:            \n"
-		"pushl 8(%ebp)        \n" // push obj
-		"call  *20(%ebp)      \n"
-		"addl  16(%ebp), %esp \n" // pop arguments
+		"movl  12(%ebp), %ecx \n" // paramSize
+		"movl  8(%ebp), %eax  \n" // args
+		"addl  %ecx, %eax     \n" 
+        "pushl (%eax)         \n" // push object first
+		"call  *16(%ebp)      \n"
+		"addl  12(%ebp), %esp \n" // pop arguments 
         "addl  $4, %esp       \n"
 		"popl  %ecx           \n");
 
 #endif
 }
 
-void CallCDeclFunctionRetByRefObjFirst_impl(const void *obj, const asDWORD *args, int paramSize, asDWORD func, void *retPtr)
+void CallCDeclFunctionRetByRefObjFirst_impl(const asDWORD *args, int paramSize, asDWORD func, void *retPtr)
 {
 #if defined ASM_INTEL
 
@@ -738,9 +566,9 @@ void CallCDeclFunctionRetByRefObjFirst_impl(const void *obj, const asDWORD *args
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -755,14 +583,16 @@ copyloop:
 endcopy:
 
 		// Push the object pointer
-        push obj
+		mov  eax, args
+		add  eax, paramSize
+        push dword ptr [eax]    
 
 		// Push the return pointer
 		push retPtr;
 
 		// Call function
-		call [func]
-
+		call [func]   
+			
 		// Pop arguments from stack
 		add  esp, paramSize
 
@@ -781,8 +611,8 @@ endcopy:
 #elif defined ASM_AT_N_T
 
 	asm("pushl %ecx           \n"
-		"movl  16(%ebp), %ecx \n" // paramSize
-		"movl  12(%ebp), %eax \n" // args
+		"movl  12(%ebp), %ecx \n" // paramSize
+		"movl  8(%ebp), %eax  \n" // args
 		"addl  %ecx, %eax     \n" // push arguments on the stack
 		"cmp   $0, %ecx       \n"
 		"je    endcopy5       \n"
@@ -792,10 +622,13 @@ endcopy:
 		"subl  $4, %ecx       \n"
 		"jne   copyloop5      \n"
 		"endcopy5:            \n"
-        "pushl 8(%ebp)        \n" // push object first
-		"pushl 24(%ebp)       \n" // retPtr
-		"call  *20(%ebp)      \n" // func
-		"addl  16(%ebp), %esp \n" // pop arguments
+		"movl  12(%ebp), %ecx \n" // paramSize
+		"movl  8(%ebp), %eax  \n" // args
+		"addl  %ecx, %eax     \n" 
+        "pushl (%eax)         \n" // push object first
+		"pushl 20(%ebp)       \n" // retPtr
+		"call  *16(%ebp)      \n" // func
+		"addl  12(%ebp), %esp \n" // pop arguments 
 #ifndef CALLEE_POPS_HIDDEN_RETURN_POINTER
 		"addl  $8, %esp       \n" // Pop the return pointer
 #else
@@ -815,9 +648,9 @@ void CallCDeclFunctionRetByRef_impl(const asDWORD *args, int paramSize, asDWORD 
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -835,8 +668,8 @@ endcopy:
 		push retPtr;
 
 		// Call function
-		call [func]
-
+		call [func]   
+			
 		// Pop arguments from stack
 		add  esp, paramSize
 
@@ -857,79 +690,6 @@ endcopy:
 		"movl  8(%ebp), %eax  \n" // args
 		"addl  %ecx, %eax     \n" // push arguments on the stack
 		"cmp   $0, %ecx       \n"
-		"je    endcopy7       \n"
-		"copyloop7:           \n"
-		"subl  $4, %eax       \n"
-		"pushl (%eax)         \n"
-		"subl  $4, %ecx       \n"
-		"jne   copyloop7      \n"
-		"endcopy7:            \n"
-		"pushl 20(%ebp)       \n" // retPtr
-		"call  *16(%ebp)      \n" // func
-		"addl  12(%ebp), %esp \n" // pop arguments
-#ifndef CALLEE_POPS_HIDDEN_RETURN_POINTER
-		"addl  $4, %esp       \n" // Pop the return pointer
-#endif
-		"popl  %ecx           \n");
-
-#endif
-}
-
-void CallCDeclFunctionRetByRefObjLast_impl(const void *obj, const asDWORD *args, int paramSize, asDWORD func, void *retPtr)
-{
-#if defined ASM_INTEL
-
-	// Copy the data to the real stack. If we fail to do
-	// this we may run into trouble in case of exceptions.
-	__asm
-	{
-		// We must save registers that are used
-	    push ecx
-
-		push obj
-
-		// Copy arguments from script
-		// stack to application stack
-        mov  ecx, paramSize
-		mov  eax, args
-		add  eax, ecx
-		cmp  ecx, 0
-		je   endcopy
-copyloop:
-		sub  eax, 4
-		push dword ptr [eax]
-		sub  ecx, 4
-		jne  copyloop
-endcopy:
-
-		// Push the return pointer
-		push retPtr;
-
-		// Call function
-		call [func]
-
-		// Pop arguments from stack
-		add  esp, paramSize
-		add  esp, 4
-
-#ifndef CALLEE_POPS_HIDDEN_RETURN_POINTER
-		// Pop the return pointer
-		add  esp, 4
-#endif
-		// Restore registers
-		pop  ecx
-
-		// return value in EAX or EAX:EDX
-	}
-
-#elif defined ASM_AT_N_T
-
-	asm("pushl %ecx           \n"
-		"pushl 8(%ebp)        \n"
-		"movl  16(%ebp), %ecx \n" // paramSize
-		"movl  12(%ebp), %eax \n" // args
-		"addl  %ecx, %eax     \n" // push arguments on the stack
-		"cmp   $0, %ecx       \n"
 		"je    endcopy4       \n"
 		"copyloop4:           \n"
 		"subl  $4, %eax       \n"
@@ -937,18 +697,17 @@ endcopy:
 		"subl  $4, %ecx       \n"
 		"jne   copyloop4      \n"
 		"endcopy4:            \n"
-		"pushl 24(%ebp)       \n" // retPtr
-		"call  *20(%ebp)      \n" // func
-		"addl  16(%ebp), %esp \n" // pop arguments
+		"pushl 20(%ebp)       \n" // retPtr
+		"call  *16(%ebp)      \n" // func
+		"addl  12(%ebp), %esp \n" // pop arguments 
 #ifndef CALLEE_POPS_HIDDEN_RETURN_POINTER
-		"addl  $8, %esp       \n" // Pop the return pointer
-#else
 		"addl  $4, %esp       \n" // Pop the return pointer
 #endif
 		"popl  %ecx           \n");
 
 #endif
 }
+
 
 void CallSTDCallFunction(const asDWORD *args, int paramSize, asDWORD func)
 {
@@ -961,7 +720,7 @@ void CallSTDCallFunction(const asDWORD *args, int paramSize, asDWORD func)
 		// We must save registers that are used
 	    push ecx
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -976,8 +735,8 @@ copyloop:
 endcopy:
 
 		// Call function
-		call [func]
-
+		call [func]   
+			
 		// The callee already removed parameters from the stack
 
 		// Restore registers
@@ -1016,9 +775,9 @@ void CallThisCallFunction(const void *obj, const asDWORD *args, int paramSize, a
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -1041,7 +800,7 @@ endcopy:
 #endif
 
 		// Call function
-		call [func]
+		call [func]         
 
 #ifndef THISCALL_CALLEE_POPS_ARGUMENTS
 		// Pop arguments
@@ -1091,9 +850,9 @@ void CallThisCallFunctionRetByRef_impl(const void *obj, const asDWORD *args, int
 	__asm
 	{
 		// We must save registers that are used
-	    push ecx
+	    push ecx			
 
-		// Copy arguments from script
+		// Copy arguments from script  
 		// stack to application stack
         mov  ecx, paramSize
 		mov  eax, args
@@ -1119,7 +878,7 @@ endcopy:
 		push retPtr
 
 		// Call function
-		call [func]
+		call [func]         
 
 #ifndef THISCALL_CALLEE_POPS_ARGUMENTS
 		// Pop arguments
@@ -1197,12 +956,6 @@ asQWORD GetReturnedDouble()
 
 	return d;
 }
-
-END_AS_NAMESPACE
-
-#endif // AS_X86
-#endif // AS_MAX_PORTABILITY
-
 
 
 

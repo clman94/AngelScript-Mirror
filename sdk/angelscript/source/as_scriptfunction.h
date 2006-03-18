@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -40,51 +40,35 @@
 #ifndef AS_SCRIPTFUNCTION_H
 #define AS_SCRIPTFUNCTION_H
 
-#include "as_config.h"
 #include "as_string.h"
 #include "as_array.h"
 #include "as_datatype.h"
-
-BEGIN_AS_NAMESPACE
+#include "as_types.h"
 
 class asCScriptEngine;
-
-struct asSScriptVariable
-{
-	asCString name;
-	asCDataType type;
-	int stackOffset;
-};
 
 class asCScriptFunction
 {
 public:
-	asCScriptFunction() {objectType = 0; name = ""; isReadOnly = false;}
-	~asCScriptFunction();
-
-	void AddVariable(asCString &name, asCDataType &type, int stackOffset);
+	asCScriptFunction() {objectType = 0; name = "";}
 
 	int GetSpaceNeededForArguments();
 	int GetSpaceNeededForReturnValue();
 	asCString GetDeclaration(asCScriptEngine *engine);
 	int GetLineNumber(int programPosition);
+	int GetExceptionID(int programPosition);
 
-	asCString                    name;
-	asCDataType                  returnType;
-	asCArray<asCDataType>        parameterTypes;
-	asCArray<int>                inOutFlags;
-	int                          id;
-	int                          scriptSectionIdx;
-	asCArray<asDWORD>            byteCode;
-	asCArray<asCObjectType*>     objVariableTypes;
-	asCArray<int>	             objVariablePos;
-	asCArray<int>                lineNumbers;
-	int                          stackNeeded;
-	bool                         isReadOnly;
-	asCObjectType *              objectType;
-	asCArray<asSScriptVariable*> variables;
+	asCString             name;
+	asCDataType           returnType;
+	asCArray<asCDataType> parameterTypes;
+	int                   id;
+	asCArray<asBYTE>      byteCode;
+	asCArray<asBYTE>      cleanCode;
+	asCArray<int>         lineNumbers;
+	asCArray<int>         exceptionIDs;
+	int                   stackNeeded;
+
+	asCObjectType *       objectType;
 };
-
-END_AS_NAMESPACE
 
 #endif

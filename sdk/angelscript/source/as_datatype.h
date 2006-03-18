@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -43,89 +43,51 @@
 #include "as_tokendef.h"
 #include "as_string.h"
 
-BEGIN_AS_NAMESPACE
-
-struct asSTypeBehaviour;
 class asCScriptEngine;
 class asCObjectType;
 
 class asCDataType
 {
 public:
-	asCDataType();
-	asCDataType(const asCDataType &);
-	~asCDataType();
+	asCDataType() : tokenType(ttUnrecognizedToken), extendedType(0), pointerLevel(0), arrayDimensions(0), objectType(0), isReference(false), isReadOnly(false) {};
+	asCDataType(eTokenType tt, bool cnst, bool ref) : tokenType(tt), extendedType(0), pointerLevel(0), arrayDimensions(0), objectType(0), isReference(ref), isReadOnly(cnst) {};
 
 	asCString Format() const;
 
-	static asCDataType CreatePrimitive(eTokenType tt, bool isConst);
-	static asCDataType CreateObject(asCObjectType *ot, bool isConst);
-	static asCDataType CreateObjectHandle(asCObjectType *ot, bool isConst);
-	static asCDataType CreateDefaultArray(asCScriptEngine *engine);
-	static asCDataType CreateNullHandle();
+	bool IsDefaultArrayType(asCScriptEngine *engine) const;
+	void SetAsDefaultArray(asCScriptEngine *engine);
+	asCDataType GetSubType(asCScriptEngine *engine);
 
-	int MakeHandle(bool b);
-	int MakeArray(asCScriptEngine *engine);
-	int MakeReference(bool b);
-	int MakeReadOnly(bool b);
-	int MakeHandleToConst(bool b);
+	eTokenType tokenType;
+	asCObjectType *extendedType;
+	int  pointerLevel;
+	int  arrayDimensions;
+	asCObjectType *objectType;
+	bool isReference;
+	bool isReadOnly;
 
-	bool IsScriptArray()    const;
-	bool IsScriptStruct()   const;
-	bool IsScriptAny()      const;
-	bool IsPrimitive()      const;
-	bool IsObject()         const;
-	bool IsReference()      const {return isReference;}
-	bool IsReadOnly()       const; 
-	bool IsIntegerType()    const;
-	bool IsUnsignedType()   const;
-	bool IsFloatType()      const;
-	bool IsDoubleType()     const;
-	bool IsBitVectorType()  const;
-	bool IsBooleanType()    const;
-	bool IsObjectHandle()   const {return isObjectHandle;}
-	bool IsHandleToConst()  const;
-	bool IsArrayType()      const;
+	bool IsPrimitive() const;
+	bool IsComplex(asCScriptEngine *engine) const;
 
-	bool IsSamePrimitiveBaseType(const asCDataType &dt) const;
-	bool IsEqualExceptRef(const asCDataType &)          const;
-	bool IsEqualExceptRefAndConst(const asCDataType &)  const;
-	bool IsEqualExceptConst(const asCDataType &)        const;
-
-	bool operator ==(const asCDataType &) const;
-	bool operator !=(const asCDataType &) const;
-
-	asCDataType    GetSubType()    const;
-	int            GetArrayType()  const;
-	eTokenType     GetTokenType()  const {return tokenType;}
-	asCObjectType *GetObjectType() const {return objectType;}
-
-	int  GetSizeOnStackDWords()  const;
-	int  GetSizeInMemoryBytes()  const;
+	bool IsIntegerType() const;
+	bool IsUnsignedType() const;
+	bool IsFloatType() const;
+	bool IsDoubleType() const;
+	bool IsBitVectorType() const;
+	bool IsBooleanType() const;
+	int  GetSizeOnStackDWords() const;
+	int  GetSizeInMemoryBytes() const;
 	int  GetSizeInMemoryDWords() const;
 
-	void SetTokenType(eTokenType tt)                  {tokenType        = tt;}
-	void SetObjectType(asCObjectType *obj)            {objectType       = obj;}
+	bool IsSameBaseType(const asCDataType &dt) const;
+	bool IsEqualExceptRef(const asCDataType &) const;
+	bool IsEqualExceptRefAndConst(const asCDataType &) const;
+	bool IsEqualExceptConst(const asCDataType &) const;
 
 	asCDataType &operator =(const asCDataType &);
-
-	asSTypeBehaviour *GetBehaviour();
-
-protected:
-	// Base object type
-	eTokenType tokenType;
-
-	// Behaviour type
-	asCObjectType *objectType;
-
-	// Top level
-	bool isReference:1;
-	bool isReadOnly:1;
-	bool isObjectHandle:1;
-	bool isConstHandle:1;
-	char dummy:4;
+	bool operator ==(const asCDataType &) const;
+	bool operator !=(const asCDataType &) const;
 };
 
-END_AS_NAMESPACE
 
 #endif

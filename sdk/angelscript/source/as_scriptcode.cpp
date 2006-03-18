@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -40,43 +40,20 @@
 #include "as_config.h"
 #include "as_scriptcode.h"
 
-BEGIN_AS_NAMESPACE
-
 asCScriptCode::asCScriptCode()
 {
 	lineOffset = 0;
-	code = 0;
-	codeLength = 0;
-	sharedCode = false;
 }
 
-asCScriptCode::~asCScriptCode()
+int asCScriptCode::SetCode(const char *name, const char *code)
 {
-	if( !sharedCode && code ) delete[] (char*)code;
+	return SetCode(name, code, strlen(code));
 }
 
-int asCScriptCode::SetCode(const char *name, const char *code, bool makeCopy)
-{
-	return SetCode(name, code, strlen(code), makeCopy);
-}
-
-int asCScriptCode::SetCode(const char *name, const char *code, int length, bool makeCopy)
+int asCScriptCode::SetCode(const char *name, const char *code, int length)
 {
 	this->name = name;
-	if( !sharedCode && this->code ) delete[] (char*)this->code;
-	if( makeCopy )
-	{
-		this->code = new char[length];
-		memcpy((char*)this->code, code, length);
-		codeLength = length;
-		sharedCode = false;
-	}
-	else
-	{
-		codeLength = length;
-		this->code = code;
-		sharedCode = true;
-	}
+	this->code.Copy(code, length);
 
 	// Find the positions of each line
 	linePositions.PushLast(0);
@@ -130,4 +107,3 @@ void asCScriptCode::ConvertPosToRowCol(int pos, int *row, int *col)
 	if( col ) *col = pos - linePositions[i] + 1;
 }
 
-END_AS_NAMESPACE

@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -48,12 +48,12 @@
 // Adds basic support for multithreading. 
 // This is currently only supported on Win32 platforms.
 
-// BUILD_WITHOUT_LINE_CUES
-// This flag makes the script compiler remove some extra bytecodes that is used
-// to allow the VM to call the line callback after each statement. The performance 
-// is improved slightly but the scripts are only guaranteed to allow one suspension
-// per loop iteration, not one per statement.
+// USE_ASM_VM
+// This flag tells the compiler to use the VM optimized with inline assembler.
 
+// BUILD_WITH_LINE_CUES
+// This flag makes the script compiler add some extra bytecode that will
+// allow ExecuteStep() to return after each statement. 
 // AS_DEBUG
 // This flag can be defined to make the library write some extra output when
 // compiling and executing scripts.
@@ -62,24 +62,6 @@
 // If this flag is defined then some backwards compatibility is maintained. 
 // There is no guarantee for how well deprecated functionality will work though
 // so it is best to exchange it for the new functionality as soon as possible.
-
-// AS_C_INTERFACE
-// Make the C interface available.
-
-// AS_NO_CLASS_METHODS
-// Disables the possibility to add class methods. Can increase the  
-// portability of the library.
-
-// AS_MAX_PORTABILITY
-// Disables all platform specific code. Only the asCALL_GENERIC calling 
-// convention will be available in with this flag set.
-
-// AS_ALLOW_UNSAFE_REFERENCES
-// When this flag is defined it is not required to define the in, out, or 
-// inout keywords for parameter references. The compiler will generate code 
-// that passes the true reference to functions. It is however possible to 
-// write scripts that could crash the application due to invalid references.
-
 
 
 
@@ -111,21 +93,14 @@
 // the function into its real name.
 
 // ASM_AT_N_T or ASM_INTEL
-// You should choose what inline assembly syntax to use when compiling.
+// You should choose what inline assembly syntax to use when compiling
 
 // __int64
 // If your compiler doesn't support the __int64 type you'll need to define
 // a substitute for it that is 64 bits large.
 
 // VALUE_OF_BOOLEAN_TRUE
-// This flag allows to customize the exact value of boolean true.
-
-// STDCALL
-// This is used to declare a function to use the stdcall calling convention.
-
-// AS_USE_NAMESPACE
-// Adds the AngelScript namespace on the declarations.
-
+// This flag allows to customize the exact value of boolean true
 
 
 //
@@ -161,12 +136,6 @@
 // AS_USE_DOUBLE_AS_FLOAT
 // If there is no 64 bit floating point type, then this constant can be defined
 // to treat double like normal floats.
-
-// AS_X86
-// Use assembler code for the x86 CPU family
-
-// AS_SH4
-// Use assembler code for the SH4 CPU family
 
 
 
@@ -214,10 +183,6 @@
 // THISCALL_CALLEE_POPS_ARGUMENTS
 // If the callee pops arguments for class methods then define this constant
 
-// COMPLEX_OBJS_PASSED_BY_REF
-// Some compilers always pass certain objects by reference. GNUC for example does 
-// this if the the class has a defined destructor.
-
 
 
 // 
@@ -237,28 +202,6 @@
 	#define vsnprintf(a, b, c, d) _vsnprintf(a, b, c, d)
 	#define THISCALL_CALLEE_POPS_ARGUMENTS
 	#define COMPLEX_MASK (asOBJ_CLASS_CONSTRUCTOR | asOBJ_CLASS_DESTRUCTOR | asOBJ_CLASS_ASSIGNMENT)
-	#define STDCALL __stdcall
-	#ifdef _M_IX86
-		#define AS_X86
-	#endif
-#endif
-
-// Metrowerks CodeWarrior (experimental, let me know if something isn't working)
-#if defined(__MWERKS__)
-	#define MULTI_BASE_OFFSET(x) (*((asDWORD*)(&x)+1))
-	#define HAVE_VIRTUAL_BASE_OFFSET
-	#define VIRTUAL_BASE_OFFSET(x) (*((asDWORD*)(&x)+3))
-	#define THISCALL_RETURN_SIMPLE_IN_MEMORY
-	#define THISCALL_PASS_OBJECT_POINTER_IN_ECX
-	#define ASM_INTEL
-	#define vsnprintf(a, b, c, d) _vsnprintf(a, b, c, d)
-	#define THISCALL_CALLEE_POPS_ARGUMENTS
-	#define COMPLEX_MASK (asOBJ_CLASS_CONSTRUCTOR | asOBJ_CLASS_DESTRUCTOR | asOBJ_CLASS_ASSIGNMENT)
-	#define STDCALL __stdcall
-	#ifdef _M_IX86
-		#define AS_X86
-	#endif
-	#define __int64 long long
 #endif
 
 // GNU C
@@ -266,27 +209,17 @@
 	#define GNU_STYLE_VIRTUAL_METHOD
 	#define MULTI_BASE_OFFSET(x) (*((asDWORD*)(&x)+1))
 	#define CALLEE_POPS_HIDDEN_RETURN_POINTER
-	#define COMPLEX_OBJS_PASSED_BY_REF
 	#define __int64 long long
 	#define ASM_AT_N_T
 	#define COMPLEX_MASK (asOBJ_CLASS_DESTRUCTOR)
-	#define STDCALL __attribute__((stdcall))
 	#ifdef __linux__
 		#define THISCALL_RETURN_SIMPLE_IN_MEMORY
 		#define CDECL_RETURN_SIMPLE_IN_MEMORY
 		#define STDCALL_RETURN_SIMPLE_IN_MEMORY
 	#endif
-	#ifdef i386
-		#define AS_X86
-	#endif
+
 #endif
 
-// Dreamcast console
-#ifdef __SH4_SINGLE_ONLY__
-	#define AS_ALIGN				// align datastructures
-	#define AS_USE_DOUBLE_AS_FLOAT	// use 32bit floats instead of doubles
-	#define AS_SH4
-#endif
 
 
 
@@ -296,16 +229,28 @@
 
 #ifdef AS_ALIGN
 	#define	ALIGN(b) (((b)+3)&(~3))
+	#define BCSIZE0	4
+	#define BCSIZE1 8
+	#define BCSIZE2 8
+	#define BCSIZE4 8
+	#define BCSIZE8 12
 #else
 	#define	ALIGN(b) (b)
+	#define BCSIZE0	4
+	#define BCSIZE1 5
+	#define BCSIZE2 6
+	#define BCSIZE4 8
+	#define BCSIZE8 12
 #endif
 
-#define	ARG_W(b) ((asWORD*)&b)
-#define	ARG_DW(b) ((asDWORD*)&b)
-#define	ARG_QW(b) ((asQWORD*)&b)	
-#define	BCARG_W(b) ((asWORD*)&(b)[1])
-#define	BCARG_DW(b) ((asDWORD*)&(b)[1])
-#define	BCARG_QW(b) ((asQWORD*)&(b)[1])
+#define	ARG_B(b) ((asBYTE*)&(b)[0])
+#define	ARG_W(b) ((asWORD*)&(b)[0])
+#define	ARG_DW(b) ((asDWORD*)&(b)[0])
+#define	ARG_QW(b) ((asQWORD*)&(b)[0])	
+#define	BCARG_B(b) ((asBYTE*)&(b)[4])
+#define	BCARG_W(b) ((asWORD*)&(b)[4])
+#define	BCARG_DW(b) ((asDWORD*)&(b)[4])
+#define	BCARG_QW(b) ((asQWORD*)&(b)[4])
 
 
 

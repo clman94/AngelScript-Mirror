@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -42,19 +42,12 @@
 #include "as_tokendef.h"
 #include "as_scriptengine.h"
 
-BEGIN_AS_NAMESPACE
-
-asCScriptFunction::~asCScriptFunction()
-{
-	for( asUINT n = 0; n < variables.GetLength(); n++ )
-		delete variables[n];
-}
 
 int asCScriptFunction::GetSpaceNeededForArguments()
 {
 	// We need to check the size for each type
 	int s = 0;
-	for( asUINT n = 0; n < parameterTypes.GetLength(); n++ )
+	for( int n = 0; n < parameterTypes.GetLength(); n++ )
 		s += parameterTypes[n].GetSizeOnStackDWords();
 
 	return s;
@@ -65,46 +58,20 @@ int asCScriptFunction::GetSpaceNeededForReturnValue()
 	return returnType.GetSizeOnStackDWords();
 }
 
-asCString asCScriptFunction::GetDeclaration(asCScriptEngine *)
+asCString asCScriptFunction::GetDeclaration(asCScriptEngine *engine)
 {
 	asCString str;
 
 	str = returnType.Format();
-	str += " ";
-	if( objectType )
-	{
-		if( objectType->name != "" )
-			str += objectType->name + "::";
-		else
-			str += "?::";
-	}
-	if( name == "" )
-		str += "?(";
-	else
-		str += name + "(";
+	str += " " + name + "(";
 
 	if( parameterTypes.GetLength() > 0 )
 	{
-		asUINT n;
+		int n;
 		for( n = 0; n < parameterTypes.GetLength() - 1; n++ )
-		{
-			str += parameterTypes[n].Format();
-			if( parameterTypes[n].IsReference() && inOutFlags.GetLength() > n )
-			{
-				if( inOutFlags[n] == 1 ) str += "in";
-				else if( inOutFlags[n] == 2 ) str += "out";
-				else if( inOutFlags[n] == 3 ) str += "inout";
-			}
-			str += ", ";
-		}
+			str += parameterTypes[n].Format() + ", ";
 
 		str += parameterTypes[n].Format();
-		if( parameterTypes[n].IsReference() && inOutFlags.GetLength() > n )
-		{
-			if( inOutFlags[n] == 1 ) str += "in";
-			else if( inOutFlags[n] == 2 ) str += "out";
-			else if( inOutFlags[n] == 3 ) str += "inout";
-		}
 	}
 
 	str += ")";
@@ -126,18 +93,17 @@ int asCScriptFunction::GetLineNumber(int programPosition)
 		if( lineNumbers[i*2] < programPosition )
 		{
 			// Have we found the largest number < programPosition?
-			if( max == i ) return lineNumbers[i*2+1];
-			if( lineNumbers[i*2+2] > programPosition ) return lineNumbers[i*2+1];
+			if( min == i ) return lineNumbers[i*2+1];
 
-			min = i + 1;
-			i = (max + min)/2; 
+			min = i;
+			i = (max + min)/2;
 		}
 		else if( lineNumbers[i*2] > programPosition )
 		{
-			// Have we found the smallest number > programPosition?
-			if( min == i ) return lineNumbers[i*2+1];
+			// Have we found the smallest number > programPoisition?
+			if( max == i ) return lineNumbers[i*2+1];
 
-			max = i - 1;
+			max = i;
 			i = (max + min)/2;
 		}
 		else
@@ -148,14 +114,41 @@ int asCScriptFunction::GetLineNumber(int programPosition)
 	}
 }
 
-void asCScriptFunction::AddVariable(asCString &name, asCDataType &type, int stackOffset)
+int asCScriptFunction::GetExceptionID(int programPosition)
 {
-	asSScriptVariable *var = new asSScriptVariable;
-	var->name = name;
-	var->type = type;
-	var->stackOffset = stackOffset;
-	variables.PushLast(var);
-}
+	if( exceptionIDs.GetLength() == 0 ) return 0;
 
-END_AS_NAMESPACE
+	// eid 0 isn't stored in the array
+	if( programPosition < exceptionIDs[0] ) return 0;
+
+	// Do a binary search in the buffer
+	int max = exceptionIDs.GetLength()/2 - 1;
+	int min = 0;
+	int i = max/2;
+
+	for(;;)
+	{
+		if( exceptionIDs[i*2] < programPosition )
+		{
+			// Have we found the largest number < programPosition?
+			if( min == i ) return exceptionIDs[i*2+1];
+
+			min = i;
+			i = (max + min)/2;
+		}
+		else if( exceptionIDs[i*2] > programPosition )
+		{
+			// Have we found the smallest number > programPoisition?
+			if( max == i ) return exceptionIDs[i*2+1];
+
+			max = i;
+			i = (max + min)/2;
+		}
+		else
+		{
+			// We found the exact position
+			return exceptionIDs[i*2+1];
+		}
+	}
+}
 

@@ -27,7 +27,7 @@ indexing operator
 </td><td valign=top>
 post increment and decrement
 </td></tr><tr><td width=150 valign=top>
-<code>.</code>
+<code>. -></code>
 </td><td valign=top>
 member access
 </td></tr><tr><td width=150 valign=top>
@@ -46,10 +46,6 @@ unary positive and negative
 <code>~</code>
 </td><td valign=top>
 bitwise complement
-</td></tr><tr><td width=150 valign=top>
-<code>@</code>
-</td><td valign=top>
-handle of
 </td></tr>
 </table>
 
@@ -60,77 +56,53 @@ handle of
 <table cellspacing=0 cellpadding=0 border=0>
 <tr><td width=150 valign=top>
 <code>* / %</code>
-</td><td width=250 valign=top>
-multiply, divide, and modulo
 </td><td valign=top>
-left to right
+multiply, divide, and modulo
 </td></tr><tr><td width=150 valign=top>
 <code>+ -</code>
-</td><td width=250 valign=top>
-add and subtract
 </td><td valign=top>
-left to right
+add and subtract
 </td></tr><tr><td width=150 valign=top>
 <code>&lt;&lt; &gt;&gt; &gt;&gt;&gt;</code>
-</td><td width=250 valign=top>
-left shift, right shift, and arithmetic right shift
 </td><td valign=top>
-left to right
+left shift, right shift, and arithmetic right shift
 </td></tr><tr><td width=150 valign=top>
 <code>&amp;</code>
-</td><td width=250 valign=top>
-bitwise and
 </td><td valign=top>
-left to right
+bitwise and
 </td></tr><tr><td width=150 valign=top>
 <code>^</code>
-</td><td width=250 valign=top>
-bitwise xor
 </td><td valign=top>
-left to right
+bitwise xor
 </td></tr><tr><td width=150 valign=top>
 <code>|</code>
-</td><td width=250 valign=top>
-bitwise or
 </td><td valign=top>
-left to right
+bitwise or
 </td></tr><tr><td width=150 valign=top>
 <code>&lt;= &lt; &gt;= &gt;</code>
-</td><td width=250 valign=top>
+</td><td valign=top>
 comparison
-</td><td valign=top>
-left to right
 </td></tr><tr><td width=150 valign=top>
-<code>== != <font color=blue>xor</font> ^^</code>
-</td><td width=250 valign=top>
+<code>== != xor ^^</code>
+</td><td valign=top>
 equality, and logical exclusive or
-</td><td valign=top>
-left to right
 </td></tr><tr><td width=150 valign=top>
-<code><font color=blue>and</font> &amp;&amp;</code>
-</td><td width=250 valign=top>
+<code><font color=blue>and &amp;&amp;</font></code>
+</td><td valign=top>
 logical and
-</td><td valign=top>
-left to right
 </td></tr><tr><td width=150 valign=top>
-<code><font color=blue>or</font> ||</code>
-</td><td width=250 valign=top>
-logical or
+<code><font color=blue>or ||</font></code>
 </td><td valign=top>
-left to right
+logical or
 </td></tr><tr><td width=150 valign=top>
 <code>?:</code>
-</td><td width=250 valign=top>
-condition
 </td><td valign=top>
-left to right
+condition
 </td></tr><tr><td width=150 valign=top>
 <code>= += -= *= /= %=
 &amp;= |= ^= &lt;&lt;= &gt;&gt;= &gt;&gt;&gt;=</code>
-</td><td width=250 valign=top>
-assignment and compound assignments
 </td><td valign=top>
-right to left
+assignment and compound assignments
 </td></tr>
 </table>
 

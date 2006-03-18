@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2004 Andreas Jönsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -12,8 +12,8 @@
 
    1. The origin of this software must not be misrepresented; you 
       must not claim that you wrote the original software. If you use
-      this software in a product, an acknowledgment in the product 
-      documentation would be appreciated but is not required.
+	  this software in a product, an acknowledgment in the product 
+	  documentation would be appreciated but is not required.
 
    2. Altered source versions must be plainly marked as such, and 
       must not be misrepresented as being the original software.
@@ -43,88 +43,6 @@
 #include "as_arrayobject.h"
 #include "as_tokenizer.h"
 
-BEGIN_AS_NAMESPACE
-
-asCDataType::asCDataType()
-{
-	tokenType      = ttUnrecognizedToken;
-	objectType     = 0;
-	isReference    = false;
-	isReadOnly     = false;
-	isObjectHandle = false;
-	isConstHandle  = false;
-}
-
-asCDataType::asCDataType(const asCDataType &dt)
-{
-	tokenType      = dt.tokenType;
-	objectType     = dt.objectType;
-	isReference    = dt.isReference;
-	isReadOnly     = dt.isReadOnly;
-	isObjectHandle = dt.isObjectHandle;
-	isConstHandle  = dt.isConstHandle;
-}
-
-asCDataType::~asCDataType()
-{
-}
-
-asCDataType asCDataType::CreateObject(asCObjectType *ot, bool isConst)
-{
-	asCDataType dt;
-
-	dt.tokenType        = ttIdentifier;
-	dt.objectType       = ot;
-	dt.isReadOnly       = isConst;
-
-	return dt;
-}
-
-asCDataType asCDataType::CreateObjectHandle(asCObjectType *ot, bool isConst)
-{
-	asCDataType dt;
-
-	dt.tokenType        = ttIdentifier;
-	dt.objectType       = ot;
-	dt.isObjectHandle   = true;
-	dt.isConstHandle    = isConst;
-
-	return dt;
-}
-
-asCDataType asCDataType::CreatePrimitive(eTokenType tt, bool isConst)
-{
-	asCDataType dt;
-
-	dt.tokenType        = tt;
-	dt.isReadOnly       = isConst;
-
-	return dt;
-}
-
-asCDataType asCDataType::CreateDefaultArray(asCScriptEngine *engine)
-{
-	asCDataType dt;
-
-	// void[] represents the default array
-	dt.objectType       = engine->defaultArrayObjectType;
-	dt.tokenType        = ttVoid;
-
-	return dt;
-}
-
-asCDataType asCDataType::CreateNullHandle()
-{
-	asCDataType dt;
-
-	dt.tokenType = ttInt;
-	dt.isReadOnly = true;
-	dt.isObjectHandle = true;
-	dt.isConstHandle = true;
-
-	return dt;
-}
-
 asCString asCDataType::Format() const
 {
 	asCString str;
@@ -136,41 +54,19 @@ asCString asCDataType::Format() const
 		str += asGetTokenDefinition(tokenType);
 	else
 	{
-		// find the baseType by following the objectType
-		asCObjectType *baseType = objectType;
-		if( baseType ) 
-			while( baseType->subType ) 
-				baseType = baseType->subType;
-		if( baseType == 0 )
+		if( extendedType == 0 )
 			str += "<unknown>";
 		else
-		{
-			if( baseType->tokenType == ttIdentifier )
-				str += baseType->name;
-			else
-				str += asGetTokenDefinition(baseType->tokenType);
-		}
+			str += extendedType->name;
 	}
 
+	int n = pointerLevel;
+	while( n-- )
+		str += "*";
 
-	asCString append;
-	int at = objectType ? objectType->arrayType : 0;
-	while( at )
-	{
-		if( (at & 3) == 3 ) 
-			append = "@[]" + append;
-		else 
-			append = "[]" + append;
-		at >>= 2;
-	}
-	str += append;
-
-	if( isObjectHandle )
-	{
-		str += "@";
-		if( isConstHandle )
-			str += "const";
-	}
+	n = arrayDimensions;
+	while( n-- )
+		str += "[]";
 
     if( isReference )
 		str += "&";
@@ -181,135 +77,51 @@ asCString asCDataType::Format() const
 
 asCDataType &asCDataType::operator =(const asCDataType &dt)
 {
-	tokenType        = dt.tokenType;
-	isReference      = dt.isReference;
-	objectType       = dt.objectType;
-	isReadOnly       = dt.isReadOnly;
-	isObjectHandle   = dt.isObjectHandle;
-	isConstHandle    = dt.isConstHandle;
+	tokenType = dt.tokenType;
+	extendedType = dt.extendedType;
+	isReference = dt.isReference;
+	pointerLevel = dt.pointerLevel;
+	arrayDimensions = dt.arrayDimensions;
+	objectType = dt.objectType;
+	isReadOnly = dt.isReadOnly;
 
 	return (asCDataType &)*this;
 }
 
-int asCDataType::MakeHandle(bool b)
+void asCDataType::SetAsDefaultArray(asCScriptEngine *engine)
 {
-	if( !objectType || objectType->beh.addref == 0 || objectType->beh.release == 0 )
-		return -1;
-
-	if( !b || (b && !isObjectHandle) )
-	{
-		isObjectHandle = b;
-		isConstHandle = false;
-	}
-
-	return 0;
+	// void[] represents the default array
+	arrayDimensions = 1;
+	objectType      = engine->defaultArrayObjectType;
+	extendedType    = 0;
+	isReadOnly      = false;
+	isReference     = false;
+	pointerLevel    = 0;
+	tokenType       = ttVoid;
 }
 
-int asCDataType::MakeArray(asCScriptEngine *engine)
+bool asCDataType::IsDefaultArrayType(asCScriptEngine *engine) const
 {
-	asCObjectType *at = engine->GetArrayTypeFromSubType(*this);
-
-	isObjectHandle = false;
-	isConstHandle = false;
-	
-	objectType = at;
-	tokenType = ttIdentifier;
-
-	return 0;
-}
-
-int asCDataType::MakeReference(bool b)
-{
-	isReference = b;
-
-	return 0;
-}
-
-int asCDataType::MakeReadOnly(bool b)
-{
-	if( isObjectHandle )
-	{
-		isConstHandle = b;
-		return 0;
-	}
-
-	isReadOnly = b;
-	return 0;
-}
-
-int asCDataType::MakeHandleToConst(bool b)
-{
-	if( !isObjectHandle ) return -1;
-
-	isReadOnly = b;
-	return 0;
-}
-
-bool asCDataType::IsReadOnly() const
-{
-	if( isObjectHandle )
-		return isConstHandle;
-
-	return isReadOnly;
-}
-
-bool asCDataType::IsHandleToConst() const
-{
-	if( !isObjectHandle ) return false;
-	return isReadOnly;
-}
-
-bool asCDataType::IsArrayType() const
-{
-	return objectType ? (objectType->arrayType != 0) : false;
-}
-
-bool asCDataType::IsScriptArray() const
-{
-	if( objectType && (objectType->flags & asOBJ_SCRIPT_ARRAY) )
+	if( arrayDimensions > 0 && objectType == engine->defaultArrayObjectType )
 		return true;
 
 	return false;
 }
 
-bool asCDataType::IsScriptStruct() const
-{
-	if( objectType && (objectType->flags & asOBJ_SCRIPT_STRUCT) )
-		return true;
-
-	return false;
-}
-
-bool asCDataType::IsScriptAny() const
-{
-	if( objectType && (objectType->flags & asOBJ_SCRIPT_ANY) )
-		return true;
-
-	return false;
-}
-
-asCDataType asCDataType::GetSubType() const
+asCDataType asCDataType::GetSubType(asCScriptEngine *engine)
 {
 	asCDataType dt(*this);
+	if( dt.arrayDimensions ) 
+		dt.arrayDimensions--;
+	else if( dt.pointerLevel ) 
+		dt.pointerLevel--;
 
-	int arrayType = GetArrayType();
-
-	dt.isReadOnly = false;
-	dt.isConstHandle = false;
-	dt.isReference = false;
-	if( objectType )
-	{
-		dt.objectType = objectType->subType;
-		if( dt.objectType == 0 )
-			dt.tokenType = objectType->tokenType;
-	}
-	else
+	if( dt.arrayDimensions > 0 )
+		dt.objectType = engine->GetArrayType(dt);
+	else if( dt.pointerLevel > 0 )
 		dt.objectType = 0;
-
-	dt.MakeHandle((arrayType & 1) ? true : false);
-	
-	if( IsReadOnly() )
-		dt.MakeReadOnly(false);
+	else
+		dt.objectType = dt.extendedType;
 
 	return dt;
 }
@@ -322,39 +134,44 @@ bool asCDataType::operator !=(const asCDataType &dt) const
 
 bool asCDataType::operator ==(const asCDataType &dt) const
 {
-	if( !IsEqualExceptRefAndConst(dt) ) return false;
+	if( tokenType != dt.tokenType ) return false;
+	if( extendedType != dt.extendedType ) return false;
 	if( isReference != dt.isReference ) return false;
+	if( pointerLevel != dt.pointerLevel ) return false;
+	if( arrayDimensions != dt.arrayDimensions ) return false;
 	if( isReadOnly != dt.isReadOnly ) return false;
-	if( isConstHandle != dt.isConstHandle ) return false;
 
 	return true;
 }
 
 bool asCDataType::IsEqualExceptRef(const asCDataType &dt) const
 {
-	if( !IsEqualExceptRefAndConst(dt) ) return false;
+	if( tokenType != dt.tokenType ) return false;
+	if( extendedType != dt.extendedType ) return false;
+	if( pointerLevel != dt.pointerLevel ) return false;
+	if( arrayDimensions != dt.arrayDimensions ) return false;
 	if( isReadOnly != dt.isReadOnly ) return false;
-	if( isConstHandle != dt.isConstHandle ) return false;
 
 	return true;
 }
 
 bool asCDataType::IsEqualExceptRefAndConst(const asCDataType &dt) const
 {
-	// Check base type
 	if( tokenType != dt.tokenType ) return false;
-	if( objectType != dt.objectType ) return false;
-	if( isObjectHandle != dt.isObjectHandle ) return false;
-	if( isObjectHandle )
-		if( isReadOnly != dt.isReadOnly ) return false;
+	if( extendedType != dt.extendedType ) return false;
+	if( pointerLevel != dt.pointerLevel ) return false;
+	if( arrayDimensions != dt.arrayDimensions ) return false;
 
 	return true;
 }
 
 bool asCDataType::IsEqualExceptConst(const asCDataType &dt) const
 {
-	if( !IsEqualExceptRefAndConst(dt) ) return false;
+	if( tokenType != dt.tokenType ) return false;
+	if( extendedType != dt.extendedType ) return false;
+	if( pointerLevel != dt.pointerLevel ) return false;
 	if( isReference != dt.isReference ) return false;
+	if( arrayDimensions != dt.arrayDimensions ) return false;
 
 	return true;
 }
@@ -362,28 +179,37 @@ bool asCDataType::IsEqualExceptConst(const asCDataType &dt) const
 bool asCDataType::IsPrimitive() const
 {
 	// A registered object is never a primitive neither is a pointer, nor an array
-	if( objectType )
+	if( tokenType == ttIdentifier ||
+		pointerLevel > 0 ||
+		arrayDimensions > 0 )
+	{
 		return false;
+	}
 
 	return true;
 }
 
-bool asCDataType::IsSamePrimitiveBaseType(const asCDataType &dt) const
+bool asCDataType::IsSameBaseType(const asCDataType &dt) const
 {
-	if( !IsPrimitive() || !dt.IsPrimitive() ) return false;
-	
+	if( pointerLevel != dt.pointerLevel ) return false;
+	if( arrayDimensions != dt.arrayDimensions ) return false;
+
 	if( IsIntegerType() && dt.IsIntegerType() ) return true;
 	if( IsUnsignedType() && dt.IsUnsignedType() ) return true;
 	if( IsFloatType() && dt.IsFloatType() ) return true;
 	if( IsBitVectorType() && dt.IsBitVectorType() ) return true;
 	if( IsDoubleType() && dt.IsDoubleType() ) return true;
-	if( IsBooleanType() && dt.IsBooleanType() ) return true;
+	if( tokenType == dt.tokenType && extendedType == dt.extendedType ) return true;
 
 	return false;
 }
 
 bool asCDataType::IsIntegerType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttInt ||
 		tokenType == ttInt8 ||
 		tokenType == ttInt16 )
@@ -394,6 +220,10 @@ bool asCDataType::IsIntegerType() const
 
 bool asCDataType::IsUnsignedType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttUInt ||
 		tokenType == ttUInt8 ||
 		tokenType == ttUInt16 )
@@ -404,6 +234,10 @@ bool asCDataType::IsUnsignedType() const
 
 bool asCDataType::IsFloatType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttFloat )
 		return true;
 
@@ -412,6 +246,10 @@ bool asCDataType::IsFloatType() const
 
 bool asCDataType::IsDoubleType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttDouble )
 		return true;
 
@@ -420,6 +258,10 @@ bool asCDataType::IsDoubleType() const
 
 bool asCDataType::IsBitVectorType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttBits ||
 		tokenType == ttBits8 ||
 		tokenType == ttBits16 )
@@ -430,23 +272,36 @@ bool asCDataType::IsBitVectorType() const
 
 bool asCDataType::IsBooleanType() const
 {
+	if( pointerLevel > 0 ||
+		arrayDimensions > 0 )
+		return false;
+
 	if( tokenType == ttBool )
 		return true;
 
 	return false;
 }
 
-bool asCDataType::IsObject() const
+bool asCDataType::IsComplex(asCScriptEngine *engine) const
 {
-	if( objectType ) return true;
+	if( IsPrimitive() ) return false;
 
-	return false;
+	if( pointerLevel > 0 && arrayDimensions == 0 ) return false;
+
+	// Only the construct, destruct, and copy behaviour make the type complex
+	asSTypeBehaviour *beh = engine->GetBehaviour(this);
+	if( beh && (beh->construct || beh->destruct || beh->copy) ) return true;
+
+	return true;
 }
 
 int asCDataType::GetSizeInMemoryBytes() const
 {
 	if( objectType != 0 )
 		return objectType->size;
+
+	if( pointerLevel > 0 )
+		return 4;
 
 	if( tokenType == ttVoid )
 		return 0;
@@ -481,21 +336,6 @@ int asCDataType::GetSizeOnStackDWords() const
 {
 	if( isReference ) return 1;
 
-	// Objects are stored with a pointer to dynamic memory
-	if( objectType ) return 1;
-
 	return GetSizeInMemoryDWords();
 }
-
-int asCDataType::GetArrayType() const
-{
-	return objectType ? objectType->arrayType : 0;
-}
-
-asSTypeBehaviour *asCDataType::GetBehaviour()
-{ 
-	return objectType ? &objectType->beh : 0; 
-}
-
-END_AS_NAMESPACE
 
