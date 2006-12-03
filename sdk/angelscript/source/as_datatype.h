@@ -81,6 +81,7 @@ public:
 	bool IsUnsignedType()   const;
 	bool IsFloatType()      const;
 	bool IsDoubleType()     const;
+	bool IsBitVectorType()  const;
 	bool IsBooleanType()    const;
 	bool IsObjectHandle()   const {return isObjectHandle;}
 	bool IsHandleToConst()  const;

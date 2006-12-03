@@ -222,37 +222,7 @@ enum bcInstr
 	BC_SetV2        = 143,
 	BC_Cast         = 144,	// Cast handle type to another handle type
 
-	BC_i64TOi       = 145,
-	BC_uTOi64       = 146,
-	BC_iTOi64       = 147,
-	BC_fTOi64       = 148,
-	BC_dTOi64       = 149,
-	BC_fTOu64       = 150,
-	BC_dTOu64       = 151,
-	BC_i64TOf       = 152,
-	BC_u64TOf       = 153,
-	BC_i64TOd       = 154,
-	BC_u64TOd       = 155,
-	BC_NEGi64       = 156,
-	BC_INCi64       = 157,
-	BC_DECi64       = 158,
-	BC_BNOT64       = 159,
-
-	BC_ADDi64   	= 160,
-	BC_SUBi64   	= 161,
-	BC_MULi64   	= 162,
-	BC_DIVi64		= 163,
-	BC_MODi64		= 164,
-	BC_BAND64		= 165,
-	BC_BOR64		= 166,
-	BC_BXOR64		= 167,
-	BC_BSLL64		= 168,
-	BC_BSRL64		= 169,
-	BC_BSRA64		= 170,
-	BC_CMPi64       = 171,
-	BC_CMPu64       = 172,
-
-	BC_MAXBYTECODE  = 173,
+	BC_MAXBYTECODE  = 145,
 
 	// Temporary tokens, can't be output to the final program
 	BC_PSP			= 246,
@@ -461,36 +431,6 @@ const int BCT_SetV1     = BCTYPE_wW_DW_ARG;
 const int BCT_SetV2     = BCTYPE_wW_DW_ARG;
 const int BCT_Cast      = BCTYPE_DW_ARG;
 
-const int BCT_i64TOi    = BCTYPE_wW_rW_ARG;
-const int BCT_uTOi64    = BCTYPE_wW_rW_ARG;
-const int BCT_iTOi64    = BCTYPE_wW_rW_ARG;
-const int BCT_fTOi64    = BCTYPE_wW_rW_ARG;
-const int BCT_dTOi64    = BCTYPE_rW_ARG;
-const int BCT_fTOu64    = BCTYPE_wW_rW_ARG;
-const int BCT_dTOu64    = BCTYPE_rW_ARG;
-const int BCT_i64TOf    = BCTYPE_wW_rW_ARG;
-const int BCT_u64TOf    = BCTYPE_wW_rW_ARG;
-const int BCT_i64TOd    = BCTYPE_rW_ARG;
-const int BCT_u64TOd    = BCTYPE_rW_ARG;
-const int BCT_NEGi64    = BCTYPE_rW_ARG;
-const int BCT_INCi64    = BCTYPE_NO_ARG;
-const int BCT_DECi64    = BCTYPE_NO_ARG;
-const int BCT_BNOT64    = BCTYPE_rW_ARG;
-
-const int BCT_ADDi64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_SUBi64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_MULi64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_DIVi64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_MODi64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BAND64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BOR64     = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BXOR64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BSLL64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BSRL64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_BSRA64    = BCTYPE_wW_rW_rW_ARG;
-const int BCT_CMPi64    = BCTYPE_rW_rW_ARG;
-const int BCT_CMPu64    = BCTYPE_rW_rW_ARG;
-
 // Temporary
 const int BCT_PSP       = BCTYPE_W_ARG;
 #ifndef BUILD_WITHOUT_LINE_CUES
@@ -646,35 +586,28 @@ const int bcTypes[256] =
 	BCT_SetV1,
 	BCT_SetV2,
 	BCT_Cast,
-	BCT_i64TOi,
-	BCT_uTOi64,
-	BCT_iTOi64,
-	BCT_fTOi64,
-	BCT_dTOi64,
-	BCT_fTOu64,
-	BCT_dTOu64,
-	BCT_i64TOf,
-	BCT_u64TOf,
-	BCT_i64TOd,
-	BCT_u64TOd,
-	BCT_NEGi64,
-	BCT_INCi64,
-	BCT_DECi64,
-	BCT_BNOT64,
-	BCT_ADDi64,
-	BCT_SUBi64,
-	BCT_MULi64,
-	BCT_DIVi64,
-	BCT_MODi64,
-	BCT_BAND64,
-	BCT_BOR64,
-	BCT_BXOR64,
-	BCT_BSLL64,
-	BCT_BSRL64,
-	BCT_BSRA64,
-	BCT_CMPi64,
-	BCT_CMPu64,
-	0,0,0,0,0,0,0, // 173-179
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,0,0,0,0, // 165-169
+	0,0,0,0,0,0,0,0,0,0, // 170-179
 	0,0,0,0,0,0,0,0,0,0, // 180-189
 	0,0,0,0,0,0,0,0,0,0, // 190-199
 	0,0,0,0,0,0,0,0,0,0, // 200-209
@@ -841,35 +774,28 @@ const int bcStackInc[256] =
 	0,			// BC_SetV1
 	0,			// BC_SetV2
 	0,			// BC_Cast
-	0,			// BC_i64TOi
-	0,			// BC_uTOi64
-	0,			// BC_iTOi64
-	0,			// BC_fTOi64
-	0,			// BC_dTOi64
-	0,			// BC_fTOu64
-	0,			// BC_dTOu64
-	0,			// BC_i64TOf
-	0,			// BC_u64TOf
-	0,			// BC_i64TOd
-	0,			// BC_u64TOd
-	0,          // BC_NEGi64
-	0,          // BC_INCi64
-	0,          // BC_DECi64
-	0,          // BC_BNOT64
-	0,			// BC_ADDi64
-	0,			// BC_SUBi64
-	0,			// BC_MULi64
-	0,			// BC_DIVi64
-	0,			// BC_MODi64
-	0,			// BC_BAND64
-	0,			// BC_BOR64
-	0,			// BC_BXOR64
-	0,			// BC_BSLL64
-	0,			// BC_BSRL64
-	0,			// BC_BSRA64
-	0,			// BCT_CMPi64
-	0,			// BCT_CMPu64
-	0,0,0,0,0,0,0, // 173-179
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,0,0,0,0, // 165-169
+	0,0,0,0,0,0,0,0,0,0, // 170-179
 	0,0,0,0,0,0,0,0,0,0, // 180-189
 	0,0,0,0,0,0,0,0,0,0, // 190-199
 	0,0,0,0,0,0,0,0,0,0, // 200-209
@@ -1042,35 +968,28 @@ const sByteCodeName bcName[256] =
 	{"SetV1"},
 	{"SetV2"},
 	{"Cast"},
-	{"i64TOi"},
-	{"uTOi64"},
-	{"iTOi64"},
-	{"fTOi64"},
-	{"dTOi64"},
-	{"fTOu64"},
-	{"dTOu64"},
-	{"i64TOf"},
-	{"u64TOf"},
-	{"i64TOd"},
-	{"u64TOd"},
-	{"NEGi64"},
-	{"INCi64"},
-	{"DECi64"},
-	{"BNOT64"},
-	{"ADDi64"},
-	{"SUBi64"},
-	{"MULi64"},
-	{"DIVi64"},
-	{"MODi64"},
-	{"BAND64"},
-	{"BOR64"},
-	{"BXOR64"},
-	{"BSLL64"},
-	{"BSRL64"},
-	{"BSRA64"},
-	{"CMPi64"},
-	{"CMPu64"},
-	{0},{0},{0},{0},{0},{0},{0}, // 173-179
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},
+	{0},{0},{0},{0},{0}, // 165-169
+	{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}, // 170-179
 	{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}, // 180-189
 	{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}, // 190-199
 	{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}, // 200-209

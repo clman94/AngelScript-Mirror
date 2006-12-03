@@ -32,14 +32,13 @@
 #ifndef AS_STRING_UTIL_H
 #define AS_STRING_UTIL_H
 
-#include "as_config.h"
+typedef unsigned int acUINT;
 
-int     asStringFormat(char *string, size_t maxLength, const char *format, ...);
-double  asStringScanDouble(const char *string, size_t *numScanned);
-int     asStringScanInt(const char *string, int base, size_t *numScanned);
-asUINT  asStringScanUInt(const char *string, int base, size_t *numScanned);
-asQWORD asStringScanUInt64(const char *string, int base, size_t *numScanned);
-void    asStringCopy(const char *source, size_t srcLength, char *dest, size_t destLength);
+int    asStringFormat(char *string, size_t maxLength, const char *format, ...);
+double asStringScanDouble(const char *string, size_t *numScanned);
+int    asStringScanInt(const char *string, int base, size_t *numScanned);
+acUINT asStringScanUInt(const char *string, int base, size_t *numScanned);
+void   asStringCopy(const char *source, size_t srcLength, char *dest, size_t destLength);
 
 #define GETSTRING(name,src,len) \
   asCString name; \

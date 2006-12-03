@@ -83,50 +83,13 @@ int asStringScanInt(const char *string, int base, size_t *numScanned)
 	return res;
 }
 
-asUINT asStringScanUInt(const char *string, int base, size_t *numScanned)
+acUINT asStringScanUInt(const char *string, int base, size_t *numScanned)
 {
 	assert(base > 0);
 
 	char *end;
 
-	asUINT res = strtoul(string, &end, base);
-
-	if( numScanned )
-		*numScanned = end - string;
-
-	return res;
-}
-
-asQWORD asStringScanUInt64(const char *string, int base, size_t *numScanned)
-{
-	assert(base == 10 || base == 16);
-
-	const char *end = string;
-
-	asQWORD res = 0;
-	if( base == 10 )
-	{
-		while( *end >= '0' && *end <= '9' )
-		{
-			res *= 10;
-			res += *end++ - '0';
-		}
-	}
-	else if( base == 16 )
-	{
-		while( (*end >= '0' && *end <= '9') ||
-			   (*end >= 'a' && *end <= 'f') ||
-               (*end >= 'A' && *end <= 'F') )
-		{
-			res *= 16;
-			if( *end >= '0' && *end <= '9' )
-				res += *end++ - '0';
-			else if( *end >= 'a' && *end <= 'f' )
-				res += *end++ - 'a' + 10;
-			else if( *end >= 'A' && *end <= 'F' )
-				res += *end++ - 'A' + 10;
-		}
-	}
+	acUINT res = strtoul(string, &end, base);
 
 	if( numScanned )
 		*numScanned = end - string;

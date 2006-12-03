@@ -387,11 +387,12 @@ bool asCDataType::IsSamePrimitiveBaseType(const asCDataType &dt) const
 {
 	if( !IsPrimitive() || !dt.IsPrimitive() ) return false;
 	
-	if( IsIntegerType()  && dt.IsIntegerType()  ) return true;
+	if( IsIntegerType() && dt.IsIntegerType() ) return true;
 	if( IsUnsignedType() && dt.IsUnsignedType() ) return true;
-	if( IsFloatType()    && dt.IsFloatType()    ) return true;
-	if( IsDoubleType()   && dt.IsDoubleType()   ) return true;
-	if( IsBooleanType()  && dt.IsBooleanType()  ) return true;
+	if( IsFloatType() && dt.IsFloatType() ) return true;
+	if( IsBitVectorType() && dt.IsBitVectorType() ) return true;
+	if( IsDoubleType() && dt.IsDoubleType() ) return true;
+	if( IsBooleanType() && dt.IsBooleanType() ) return true;
 
 	return false;
 }
@@ -400,8 +401,7 @@ bool asCDataType::IsIntegerType() const
 {
 	if( tokenType == ttInt ||
 		tokenType == ttInt8 ||
-		tokenType == ttInt16 ||
-		tokenType == ttInt64 )
+		tokenType == ttInt16 )
 		return true;
 
 	return false;
@@ -411,8 +411,7 @@ bool asCDataType::IsUnsignedType() const
 {
 	if( tokenType == ttUInt ||
 		tokenType == ttUInt8 ||
-		tokenType == ttUInt16 ||
-		tokenType == ttUInt64 )
+		tokenType == ttUInt16 )
 		return true;
 
 	return false;
@@ -429,6 +428,16 @@ bool asCDataType::IsFloatType() const
 bool asCDataType::IsDoubleType() const
 {
 	if( tokenType == ttDouble )
+		return true;
+
+	return false;
+}
+
+bool asCDataType::IsBitVectorType() const
+{
+	if( tokenType == ttBits ||
+		tokenType == ttBits8 ||
+		tokenType == ttBits16 )
 		return true;
 
 	return false;
@@ -458,16 +467,17 @@ int asCDataType::GetSizeInMemoryBytes() const
 		return 0;
 
 	if( tokenType == ttInt8 ||
-		tokenType == ttUInt8 )
+		tokenType == ttUInt8 ||
+		tokenType == ttBits8 )
 		return 1;
 
 	if( tokenType == ttInt16 ||
-		tokenType == ttUInt16 )
+		tokenType == ttUInt16 ||
+		tokenType == ttBits16 )
 		return 2;
 
 	if( tokenType == ttDouble ||
-		tokenType == ttInt64 ||
-		tokenType == ttUInt64 )
+		tokenType == ttInt64 )
 		return 8;
 
 	if( tokenType == ttBool )

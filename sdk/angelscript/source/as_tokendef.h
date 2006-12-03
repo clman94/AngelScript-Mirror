@@ -135,7 +135,6 @@ enum eTokenType
 	ttUInt,                // uint
 	ttUInt8,               // uint8
 	ttUInt16,              // uint16
-	ttUInt64,              // uint64
 	ttFloat,               // float
 	ttVoid,                // void
 	ttTrue,                // true
@@ -149,6 +148,9 @@ enum eTokenType
 	ttContinue,            // continue
 	ttConst,			   // const
 	ttDo,                  // do
+	ttBits,                // bits
+	ttBits8,               // bits8
+	ttBits16,              // bits16
 	ttDouble,              // double
 	ttSwitch,              // switch
 	ttCase,                // case
@@ -218,12 +220,10 @@ sTokenWord const tokenWords[] =
 	{"^^"        , ttXor},
 	{"@"         , ttHandle},
 	{"and"       , ttAnd},
-#ifdef AS_DEPRECATED
-	{"bits"      , ttUInt},
-	{"bits8"     , ttUInt8},
-	{"bits16"    , ttUInt16},
-	{"bits32"    , ttUInt},
-#endif
+	{"bits"      , ttBits},
+	{"bits8"     , ttBits8},
+	{"bits16"    , ttBits16},
+	{"bits32"    , ttBits},
 	{"bool"      , ttBool},
 	{"break"     , ttBreak},
 	{"cast"      , ttCast},
@@ -261,9 +261,11 @@ sTokenWord const tokenWords[] =
 	{"uint8"     , ttUInt8},
 	{"uint16"    , ttUInt16},
 	{"uint32"    , ttUInt},
-	{"uint64"    , ttUInt64},
 	{"switch"    , ttSwitch},
 	{"class"     , ttClass},
+#ifdef AS_DEPRECATED
+	{"struct"    , ttClass},
+#endif
 	{"case"      , ttCase}, 
 	{"default"   , ttDefault},
 	{"xor"       , ttXor},

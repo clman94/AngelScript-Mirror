@@ -1748,7 +1748,6 @@ void asCContext::ExecuteNext()
 		else
 			l_bc++;
 		break;
-
 	case BC_ALLOC:
 		{
 			asCObjectType *objType = (asCObjectType*)(size_t)PTRARG(l_bc);
@@ -1829,7 +1828,6 @@ void asCContext::ExecuteNext()
 			}
 		}
 		break;
-
 	case BC_FREE:
 		{
 			asDWORD **a = (asDWORD**)*(size_t*)l_sp;
@@ -1865,7 +1863,6 @@ void asCContext::ExecuteNext()
 		}
 		l_bc += 1+PTR_SIZE;
 		break;
-
 	case BC_LOADOBJ:
 		{
 			// Move the object pointer from the object variable into the object register
@@ -1876,14 +1873,12 @@ void asCContext::ExecuteNext()
 		}
 		l_bc++;
 		break;
-
 	case BC_STOREOBJ:
 		// Move the object pointer from the object register to the object variable
 		*(size_t*)(l_fp - SWORDARG0(l_bc)) = size_t(objectRegister);
 		objectRegister = 0;
 		l_bc++;
 		break;
-
 	case BC_GETOBJ:
 		{
 			size_t *a = (size_t*)(l_sp + WORDARG0(l_bc));
@@ -1894,7 +1889,6 @@ void asCContext::ExecuteNext()
 		}
 		l_bc++;
 		break;
-
 	case BC_REFCPY:
 		{
 			asCObjectType *objType = (asCObjectType*)(size_t)PTRARG(l_bc);
@@ -1916,7 +1910,6 @@ void asCContext::ExecuteNext()
 		}
 		l_bc += 1+PTR_SIZE;
 		break;
-
 	case BC_CHKREF:
 		{
 			// Verify if the pointer on the stack is null
@@ -1941,7 +1934,6 @@ void asCContext::ExecuteNext()
 		}
 		l_bc++;
 		break;
-
 	case BC_GETREF:
 		{
 			size_t *a = (size_t*)(l_sp + WORDARG0(l_bc));
@@ -1949,7 +1941,6 @@ void asCContext::ExecuteNext()
 		}
 		l_bc++;
 		break;
-
 	case BC_SWAP48:
 		{
 			asDWORD d = *(asDWORD*)l_sp;
@@ -1959,7 +1950,6 @@ void asCContext::ExecuteNext()
 			l_bc++;
 		}
 		break;
-
 	case BC_SWAP84:
 		{
 			asQWORD q = *(asQWORD*)l_sp;
@@ -1969,13 +1959,11 @@ void asCContext::ExecuteNext()
 			l_bc++;
 		}
 		break;
-
 	case BC_OBJTYPE:
 		l_sp -= PTR_SIZE;
 		*(asPTRWORD*)l_sp = PTRARG(l_bc);
 		l_bc += 1+PTR_SIZE;
 		break;
-
 	case BC_TYPEID:
 		{
 			--l_sp;
@@ -1984,17 +1972,14 @@ void asCContext::ExecuteNext()
 			l_bc += 2;
 		}
 		break;
-
 	case BC_SetV4:
 		*(l_fp - SWORDARG0(l_bc)) = DWORDARG(l_bc);
 		l_bc += 2;
 		break;
-
 	case BC_SetV8:
 		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = QWORDARG(l_bc);
 		l_bc += 3;
 		break;
-
 	case BC_ADDSi:
 		*(size_t*)l_sp = size_t(asPTRWORD(*(size_t*)l_sp) + INTARG(l_bc));
 		l_bc += 2;
@@ -2004,37 +1989,30 @@ void asCContext::ExecuteNext()
 		*(l_fp - SWORDARG0(l_bc)) = *(l_fp - SWORDARG1(l_bc));
 		l_bc += 2;
 		break;
-
 	case BC_CpyVtoV8:
 		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc));
 		l_bc += 2;
 		break;
-
 	case BC_CpyVtoR4:
 		*(asDWORD*)&register1 = *(asDWORD*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_CpyVtoR8:
 		*(asQWORD*)&register1 = *(asQWORD*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_CpyVtoG4:
 		*(asDWORD*)module->globalVarPointers[WORDARG0(l_bc)] = *(asDWORD*)(l_fp - SWORDARG1(l_bc));
 		l_bc += 2;
 		break;
-
 	case BC_CpyRtoV4:
 		*(asDWORD*)(l_fp - SWORDARG0(l_bc)) = *(asDWORD*)&register1;
 		l_bc++;
 		break;
-
 	case BC_CpyRtoV8:
 		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = register1;
 		l_bc++;
 		break;
-
 	case BC_CpyGtoV4:
 		*(asDWORD*)(l_fp - SWORDARG0(l_bc)) = *(asDWORD*)module->globalVarPointers[WORDARG1(l_bc)];
 		l_bc += 2;
@@ -2045,18 +2023,15 @@ void asCContext::ExecuteNext()
 		**(asBYTE**)&register1 = *(asBYTE*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_WRTV2:
 		// The pointer in the register points to a word, and *(l_fp - offset) too
 		**(asWORD**)&register1 = *(asWORD*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_WRTV4:
 		**(asDWORD**)&register1 = *(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_WRTV8:
 		**(asQWORD**)&register1 = *(asQWORD*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
@@ -2067,18 +2042,15 @@ void asCContext::ExecuteNext()
 		*(asBYTE*)(l_fp - SWORDARG0(l_bc)) = **(asBYTE**)&register1;
 		l_bc++;
 		break;
-
 	case BC_RDR2:
 		// The pointer in the register points to a word, and *(l_fp - offset) will also point to a word
 		*(asWORD*)(l_fp - SWORDARG0(l_bc)) = **(asWORD**)&register1;
 		l_bc++;
 		break;
-
 	case BC_RDR4:
 		*(asDWORD*)(l_fp - SWORDARG0(l_bc)) = **(asDWORD**)&register1;
 		l_bc++;
 		break;
-
 	case BC_RDR8:
 		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = **(asQWORD**)&register1;
 		l_bc++;
@@ -2088,18 +2060,15 @@ void asCContext::ExecuteNext()
 		*(asDWORD**)&register1 = (asDWORD*)module->globalVarPointers[WORDARG0(l_bc)];
 		l_bc++;
 		break;
-
 	case BC_LDV:
 		*(asDWORD**)&register1 = (l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_PGA:
 		l_sp -= PTR_SIZE;
 		*(asPTRWORD*)l_sp = (asPTRWORD)(size_t)module->globalVarPointers[WORDARG0(l_bc)];
 		l_bc++;
 		break;
-
 	case BC_RDS4:
 #ifndef AS_64BIT_PTR
 		*l_sp = *(asDWORD*)*(size_t*)l_sp;
@@ -2112,7 +2081,6 @@ void asCContext::ExecuteNext()
 #endif
 		l_bc++;
 		break;
-
 	case BC_VAR:
 		l_sp -= PTR_SIZE;
 		*(size_t*)l_sp = (size_t)SWORDARG0(l_bc);
@@ -2164,7 +2132,6 @@ void asCContext::ExecuteNext()
 		*(l_fp - SWORDARG0(l_bc)) = *(asWORD*)(l_fp - SWORDARG0(l_bc));
 		l_bc++;
 		break;
-
 	case BC_dTOi:
 		*(l_fp - SWORDARG0(l_bc)) = int(*(double*)(l_fp - SWORDARG1(l_bc)));
 		l_bc += 2;
@@ -2498,189 +2465,36 @@ void asCContext::ExecuteNext()
 		l_bc += 2;
 		break;
 
-	case BC_i64TOi:
-		*(l_fp - SWORDARG0(l_bc)) = int(*(asINT64*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_uTOi64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = asINT64(*(asUINT*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_iTOi64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = asINT64(*(int*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_fTOi64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = asINT64(*(float*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_dTOi64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = asINT64(*(double*)(l_fp - SWORDARG0(l_bc)));
-		l_bc++;
-		break;
-
-	case BC_fTOu64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = asQWORD(*(float*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_dTOu64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = asQWORD(*(double*)(l_fp - SWORDARG0(l_bc)));
-		l_bc++;
-		break;
-
-	case BC_i64TOf:
-		*(float*)(l_fp - SWORDARG0(l_bc)) = float(*(asINT64*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_u64TOf:
-		// TODO: MSVC6 doesn't permit UINT64 to double
-		*(float*)(l_fp - SWORDARG0(l_bc)) = float((signed)*(asQWORD*)(l_fp - SWORDARG1(l_bc)));
-		l_bc += 2;
-		break;
-
-	case BC_i64TOd:
-		*(double*)(l_fp - SWORDARG0(l_bc)) = double(*(asINT64*)(l_fp - SWORDARG0(l_bc)));
-		l_bc++;
-		break;
-
-	case BC_u64TOd:
-		// TODO: MSVC6 doesn't permit UINT64 to double
-		*(double*)(l_fp - SWORDARG0(l_bc)) = double((signed)*(asQWORD*)(l_fp - SWORDARG0(l_bc)));
-		l_bc++;
-		break;
-
-	case BC_NEGi64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = -*(asINT64*)(l_fp - SWORDARG0(l_bc));
-		l_bc++;
-		break;
-
-	case BC_INCi64:
-		++(**(asQWORD**)&register1);
-		l_bc++;
-		break;
-
-	case BC_DECi64:
-		--(**(asQWORD**)&register1);
-		l_bc++;
-		break;
-
-	case BC_BNOT64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = ~*(asQWORD*)(l_fp - SWORDARG0(l_bc));
-		l_bc++;
-		break;
-
-	case BC_ADDi64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) + *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_SUBi64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) - *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_MULi64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) * *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_DIVi64:
-		{
-			asQWORD divider = *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-			if( divider == 0 )
-			{
-				// Need to move the values back to the context
-				byteCode = l_bc;
-				stackPointer = l_sp;
-				stackFramePointer = l_fp;
-
-				// Raise exception
-				SetInternalException(TXT_DIVIDE_BY_ZERO);
-				return;
-			}
-			*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) / divider;
-		}
-		l_bc += 2;
-		break;
-
-	case BC_MODi64:
-		{
-			asQWORD divider = *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-			if( divider == 0 )
-			{
-				// Need to move the values back to the context
-				byteCode = l_bc;
-				stackPointer = l_sp;
-				stackFramePointer = l_fp;
-
-				// Raise exception
-				SetInternalException(TXT_DIVIDE_BY_ZERO);
-				return;
-			}
-			*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) % divider;
-		}
-		l_bc += 2;
-		break;
-
-	case BC_BAND64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) & *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_BOR64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) | *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_BXOR64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) ^ *(asQWORD*)(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_BSLL64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) << *(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_BSRL64:
-		*(asQWORD*)(l_fp - SWORDARG0(l_bc)) = *(asQWORD*)(l_fp - SWORDARG1(l_bc)) >> *(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_BSRA64:
-		*(asINT64*)(l_fp - SWORDARG0(l_bc)) = *(asINT64*)(l_fp - SWORDARG1(l_bc)) >> *(l_fp - SWORDARG2(l_bc));
-		l_bc += 2;
-		break;
-
-	case BC_CMPi64:
-		{
-			asINT64 i = *(asINT64*)(l_fp - SWORDARG0(l_bc)) - *(asINT64*)(l_fp - SWORDARG1(l_bc));
-			if( i == 0 )     *(int*)&register1 =  0;
-			else if( i < 0 ) *(int*)&register1 = -1;
-			else             *(int*)&register1 =  1;
-			l_bc += 2;
-		}
-		break;
-
-	case BC_CMPu64:
-		{
-			asQWORD d = *(asQWORD*)(l_fp - SWORDARG0(l_bc));
-			asQWORD d2 = *(asQWORD*)(l_fp - SWORDARG1(l_bc));
-			if( d == d2 )     *(int*)&register1 =  0;
-			else if( d < d2 ) *(int*)&register1 = -1;
-			else              *(int*)&register1 =  1;
-			l_bc += 2;
-		}
-		break;
-
 	// Don't let the optimizer optimize for size, 
 	// since it requires extra conditions and jumps
+	case 145: l_bc = (asDWORD*)145; break;
+	case 146: l_bc = (asDWORD*)146; break;
+	case 147: l_bc = (asDWORD*)147; break;
+	case 148: l_bc = (asDWORD*)148; break;
+	case 149: l_bc = (asDWORD*)149; break;
+	case 150: l_bc = (asDWORD*)150; break;
+	case 151: l_bc = (asDWORD*)151; break;
+	case 152: l_bc = (asDWORD*)152; break;
+	case 153: l_bc = (asDWORD*)153; break;
+	case 154: l_bc = (asDWORD*)154; break;
+	case 155: l_bc = (asDWORD*)155; break;
+	case 156: l_bc = (asDWORD*)156; break;
+	case 157: l_bc = (asDWORD*)157; break;
+	case 158: l_bc = (asDWORD*)158; break;
+	case 159: l_bc = (asDWORD*)159; break;
+	case 160: l_bc = (asDWORD*)160; break;
+	case 161: l_bc = (asDWORD*)161; break;
+	case 162: l_bc = (asDWORD*)162; break;
+	case 163: l_bc = (asDWORD*)163; break;
+	case 164: l_bc = (asDWORD*)164; break;
+	case 165: l_bc = (asDWORD*)165; break;
+	case 166: l_bc = (asDWORD*)166; break;
+	case 167: l_bc = (asDWORD*)167; break;
+	case 168: l_bc = (asDWORD*)168; break;
+	case 169: l_bc = (asDWORD*)169; break;
+	case 170: l_bc = (asDWORD*)170; break;
+	case 171: l_bc = (asDWORD*)171; break;
+	case 172: l_bc = (asDWORD*)172; break;
 	case 173: l_bc = (asDWORD*)173; break;
 	case 174: l_bc = (asDWORD*)174; break;
 	case 175: l_bc = (asDWORD*)175; break;

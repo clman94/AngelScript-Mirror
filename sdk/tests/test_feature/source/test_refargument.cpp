@@ -10,14 +10,14 @@ static const char *script1 =
 "{                                      \n"
 "   float r;                            \n"
 "   test2(r);                           \n"
-"   Assert(ref.id == int(0xdeadc0de));  \n"
+"   Assert(ref.id == 0xdeadc0de);       \n"
 "   test(ref);                          \n"
 "   test3(r);                           \n"
 "   Assert(r == 1.0f);                  \n"
 "}                                      \n"
 "void test(refclass &in ref)            \n"
 "{                                      \n"
-"   Assert(ref.id == int(0xdeadc0de));  \n"
+"   Assert(ref.id == 0xdeadc0de);       \n"
 "}                                      \n"
 "void test2(float &out ref)             \n"
 "{                                      \n"
@@ -116,7 +116,7 @@ bool Test()
 
 	engine->AddScriptSection(0, TESTNAME, script2, strlen(script2), 0);
 	r = engine->Build(0);
-	if( !engine->GetEngineProperty(asEP_ALLOW_UNSAFE_REFERENCES) )
+	if( !strstr(asGetLibraryOptions(), "AS_ALLOW_UNSAFE_REFERENCES") )
 	{
 		if( r >= 0 ) fail = true;
 		if( bout.buffer != "TestRefArgument (6, 18) : Error   : Only object types that support object handles can use &inout. Use &in or &out instead\n" ) fail = true;
